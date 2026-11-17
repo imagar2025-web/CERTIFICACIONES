@@ -1,7 +1,7 @@
 [🏠 Índice](../README.md) · [← Anterior](../08-modelado-de-datos/README.md) · [Siguiente →](../10-limpieza-transformacion-y-carga/README.md)
 
 > **Estado de estudio:** ✅ Visto · **Unidades oficiales:** 11 · [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/ingest-data-into-unity-catalog/)  
-> **Versión de apuntes:** 14-11-2026 · Contenido técnico redactado de forma original a partir del itinerario de Microsoft.
+> **Versión de apuntes:** 15-11-2026 · Contenido técnico redactado de forma original a partir del itinerario de Microsoft.
 
 # 9. Ingerir datos en Unity Catalog
 
@@ -121,6 +121,48 @@ Recibe diez archivos JSON, algunos repetidos. Define una estrategia con Auto Loa
 **Preguntas clave:** ¿qué resuelve el checkpoint? ¿En qué se diferencia COPY INTO de CTAS? ¿Para qué sirve `sequence_by` conceptualmente en CDC? ¿En qué caso elegirías Lakeflow Connect en vez de un notebook personalizado?
 
 ---
+
+---
+
+
+## Desarrollo en profundidad: ingestión incremental y garantías de entrega
+
+### Una carga correcta debe poder repetirse
+
+El desafío de la ingestión no es solo introducir datos en una tabla. Debes determinar cómo se comporta el pipeline si la misma carga se ejecuta dos veces, si la conexión falla a mitad de proceso, si llega un archivo duplicado o si el origen cambia de esquema. La **idempotencia** significa que repetir una operación con las mismas entradas no altera indebidamente el resultado final. Es una propiedad esencial cuando hay reintentos automáticos.
+
+### Batch frente a streaming
+
+Una carga batch procesa lotes delimitados, por ejemplo un fichero diario. Streaming procesa datos que llegan progresivamente y suele funcionar en microbatches con estado y checkpoints. No toda actualización frecuente exige streaming: una carga cada quince minutos puede cubrir un SLA sin la complejidad de mantener un flujo continuo. La elección depende de latencia, coste, disponibilidad del origen y gestión de fallos.
+
+### COPY INTO, Auto Loader y Structured Streaming
+
+`COPY INTO` resulta apropiado para cargar archivos desde ubicaciones accesibles mediante SQL y conservar seguimiento de los archivos procesados según la semántica admitida. Auto Loader está diseñado para descubrir progresivamente archivos nuevos, manejar evolución de esquemas y escalar la detección. Structured Streaming proporciona la base de procesamiento incremental y permite escribir con checkpoints. Cuando el origen es una base de datos con cambios, un flujo CDC puede resultar más eficiente que leer tablas completas.
+
+```python
+from pyspark.sql import functions as F
+
+raw = (spark.readStream.format("cloudFiles")
+    .option("cloudFiles.format", "json")
+    .option("cloudFiles.schemaLocation", "/Volumes/estudio/raw/estado/esquemas_ventas")
+    .load("/Volumes/estudio/raw/entrada/ventas"))
+
+query = (raw.withColumn("ingestion_ts", F.current_timestamp())
+    .writeStream.format("delta")
+    .option("checkpointLocation", "/Volumes/estudio/raw/estado/checkpoint_ventas")
+    .trigger(availableNow=True)
+    .toTable("estudio.bronze.ventas_raw"))
+```
+
+El ejemplo presupone volúmenes y tablas creados, privilegios sobre sus rutas y soporte de Auto Loader en el cómputo elegido. `availableNow` procesa los archivos disponibles y finaliza; no deja una consulta continua funcionando indefinidamente. **No reutilices checkpoints entre consultas distintas ni los borres sin entender las consecuencias**, porque puedes volver a procesar archivos o perder el punto de progreso.
+
+### Captura de cambios y orden de eventos
+
+Un origen CDC puede producir inserciones, actualizaciones y eliminaciones. Hay que conservar la clave de negocio, una secuencia de cambios confiable, el tipo de operación y una marca temporal. Si llegan eventos fuera de orden, aplicar simplemente el último evento recibido puede sobrescribir información nueva con una actualización antigua. Definir la ordenación y deduplicación de cambios es tan importante como copiar los bytes.
+
+### Plan de validación de la ingestión
+
+Prueba (1) primera carga, (2) reejecución sin nuevas entradas, (3) llegada de nuevos archivos, (4) fichero con columna extra, (5) error de tipo, (6) eliminación de un dato en el origen, (7) caída a mitad de procesamiento. Para cada caso registra qué debe ocurrir en Bronze y si Silver puede reconstruirse sin acceder de nuevo al origen. El diseño Medallion se beneficia de preservar datos originales y metadatos de procedencia para facilitar auditoría y reprocesos.
 
 ---
 

@@ -1,7 +1,7 @@
 [🏠 Índice](../README.md) · [← Anterior](../09-ingesta-de-datos/README.md) · [Siguiente →](../11-calidad-de-datos/README.md)
 
 > **Estado de estudio:** ✅ Visto · **Unidades oficiales:** 11 · [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/cleanse-transform-load-data-into-unity-catalog/)  
-> **Versión de apuntes:** 14-11-2026 · Contenido técnico redactado de forma original a partir del itinerario de Microsoft.
+> **Versión de apuntes:** 15-11-2026 · Contenido técnico redactado de forma original a partir del itinerario de Microsoft.
 
 # 10. Limpiar, transformar y cargar datos
 
@@ -147,6 +147,64 @@ Diseña una tubería con estas etapas: CSV bruto → perfilado → tipado explí
 **Comprobaciones que debes poder explicar:** ¿por qué `WHERE campo = NULL` no funciona? ¿cuándo usar `DECIMAL`? ¿cómo detectar un join que duplica importes? ¿qué diferencia hay entre `INSERT` y `MERGE`? ¿cómo afecta `HAVING` a un grupo?
 
 ---
+
+---
+
+
+## Desarrollo en profundidad: transformar sin perder trazabilidad
+
+### Separar calidad técnica de reglas de negocio
+
+La capa Bronze suele capturar datos del origen con mínima modificación; Silver aplica tipado, deduplicación, normalización y reglas de calidad; Gold construye representaciones para consumo. No es obligatorio que toda solución use exactamente tres capas, pero la separación evita que las reglas de un informe contaminen los datos de origen y permite reutilizar una representación limpia en varios productos.
+
+### Perfilado antes de modificar
+
+Antes de limpiar, mide cantidades, tipos, nulos, duplicados, rangos y distribución de valores. Un nulo en `telefono` podría ser válido, mientras que uno en `id_pedido` impide identificar la operación. Una fecha futura puede ser error o una reserva legítima. Las reglas deben escribirse con el negocio, no deducirse arbitrariamente.
+
+```python
+from pyspark.sql import functions as F
+base = spark.table("estudio.bronze.pedidos")
+base.select(
+    F.count("*").alias("filas"),
+    F.sum(F.col("id_pedido").isNull().cast("int")).alias("ids_nulos"),
+    F.countDistinct("id_pedido").alias("ids_distintos")
+).show()
+```
+
+`countDistinct` ignora valores nulos en muchos contextos; para detectar duplicados reales es más fiable agrupar por la clave y contar las repeticiones, incluyendo las reglas que definan si múltiples líneas de un mismo pedido son legítimas.
+
+### Joins, unions y cardinalidad
+
+Un join de una tabla de hechos con una dimensión que contiene varias filas por clave multiplica registros y distorsiona importes. Antes de unir, comprueba unicidad de la clave o restringe dimensiones historizadas a la versión correcta. `unionByName` une filas alineando columnas por nombre, mientras que `intersect` y `except` expresan operaciones de conjuntos cuya semántica respecto a duplicados debe revisarse.
+
+```python
+clientes = spark.table("estudio.silver.clientes_actuales")
+pedidos = spark.table("estudio.silver.pedidos")
+resultado = pedidos.join(clientes, "id_cliente", "left")
+
+# Medir crecimiento inesperado de filas tras el join:
+print("Pedidos:", pedidos.count())
+print("Resultado:", resultado.count())
+```
+
+### MERGE frente a append y overwrite
+
+`append` agrega registros sin comprobar si ya existen; `overwrite` sustituye contenido; `MERGE` permite una lógica condicionada por claves y coincidencias. Para una tabla de estado actual, `MERGE` suele resultar útil, pero debe recibir una fuente deduplicada y una condición de unión que identifique unívocamente la fila objetivo. No conviertas `MERGE` en sinónimo de historial SCD2: actualizar la fila actual sobreescribe valores si no se diseña explícitamente el versionado.
+
+```sql
+MERGE INTO estudio.silver.clientes AS d
+USING estudio.staging.clientes_nuevos AS s
+ON d.id_cliente = s.id_cliente
+WHEN MATCHED THEN UPDATE SET d.nombre = s.nombre, d.ciudad = s.ciudad
+WHEN NOT MATCHED THEN INSERT (id_cliente, nombre, ciudad)
+VALUES (s.id_cliente, s.nombre, s.ciudad);
+```
+
+Este ejemplo es de **estado actual/SCD tipo 1**. El origen debe tener una fila por `id_cliente` o una regla de selección determinista para no provocar coincidencias ambiguas.
+
+### Validar transformaciones
+
+Documenta aserciones: mismo número de eventos esperados, integridad referencial cuando aplique, importes no negativos, claves sin duplicación y evolución controlada de volumen. Incluye pruebas con datos deliberadamente erróneos y comprueba que el pipeline los aísla, corrige o rechaza según el contrato. No consideres una transformación correcta solo porque devuelve un DataFrame sin excepciones.
 
 ---
 

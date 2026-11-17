@@ -1,8 +1,8 @@
 # 📘 DP-750 · Guía de estudio de Azure Databricks
 
-> **Apuntes personales extendidos, versión 14 de noviembre de 2026** · Estructura modular para VS Code y GitHub.
+> **Apuntes personales extendidos, versión ampliada 15 de noviembre de 2026** · Estructura modular para VS Code y GitHub.
 
-Esta documentación desarrolla en español los **primeros 13 módulos del recorrido formativo para DP-750**. Cada módulo tiene su propio `README.md`, con teoría, ejemplos, comprobaciones y una guía de laboratorio enlazada con el material oficial cuando existe.
+Esta documentación desarrolla en español los **primeros 13 módulos del recorrido formativo para DP-750**, con desarrollos adicionales sobre el funcionamiento interno y escenarios de aplicación. Cada módulo tiene su propio `README.md`, con teoría, ejemplos, comprobaciones y una guía de laboratorio enlazada con el material oficial cuando existe.
 
 **Origen y atribución:** elaboración propia a partir de las páginas de Microsoft Learn y el material público de MicrosoftLearning. No constituye una copia o traducción integral de Microsoft Learn; para el texto exacto, las celdas oficiales y las evaluaciones autenticadas sigue los enlaces proporcionados. Los ejercicios aquí explicados no se han ejecutado en un workspace real.
 
@@ -38,6 +38,7 @@ Las páginas oficiales organizan el itinerario en **cuatro rutas de aprendizaje*
 - [Preparación del entorno y precauciones de costes](PREPARACION-LABORATORIOS.md)
 - [Colección oficial MicrosoftLearning DP-750T00](https://microsoftlearning.github.io/DP-750T00-Implement-Data-Engineering-Solutions-using-Azure-Databricks/)
 - [Glosario, mapa mental y preguntas de repaso](GLOSARIO-Y-REPASO.md)
+- [Archivos fuente y metodología](FUENTES-Y-METODOLOGIA.md)
 
 Cada guía práctica indica **qué parte se hace en la interfaz** y **qué parte continúa en el notebook oficial**. Para reproducir exactamente los datasets, código, ejercicios incompletos o pasos de interfaz de la versión publicada por Microsoft, utiliza el enlace de cada módulo.
 
@@ -89,6 +90,12 @@ DP-750/
 ├── 13-implementacion-lakeflow-jobs/
 │   └── README.md
 ```
+
+## 📖 Uso de los archivos fuente
+
+Los materiales de Microsoft Learn se alojan en [MicrosoftDocs/learn, directorio `learn-pr/wwl-databricks`](https://github.com/MicrosoftDocs/learn/tree/main/learn-pr/wwl-databricks). En su estructura, los archivos `.yml` describen las unidades y los archivos `includes/*.md` contienen gran parte de la explicación técnica y las referencias a imágenes. Este proyecto es una **elaboración propia en español**: no incorpora ni redistribuye el texto completo de Microsoft. Cada módulo conserva el enlace a la página original; para verificar instrucciones visuales exactas, consulta sus archivos fuente y la página Learn.
+
+Las prácticas incorporadas son **guías de ejecución y comprobación**; los notebooks enlazados son los materiales canónicos de Microsoft. No se han ejecutado dentro de un workspace real ni se certifica que todas las rutas o parámetros de ejemplo estén disponibles sin cambios en cada suscripción.
 
 ## 📚 Fuentes oficiales
 

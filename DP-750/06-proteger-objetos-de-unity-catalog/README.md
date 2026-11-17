@@ -1,7 +1,7 @@
 [🏠 Índice](../README.md) · [← Anterior](../05-crear-y-organizar-objetos-en-unity-catalog/README.md) · [Siguiente →](../07-gobernar-objetos-de-unity-catalog/README.md)
 
 > **Estado de estudio:** ✅ Visto · **Unidades oficiales:** 11 · [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/secure-unity-catalog-objects/)  
-> **Versión de apuntes:** 14-11-2026 · Contenido técnico redactado de forma original a partir del itinerario de Microsoft.
+> **Versión de apuntes:** 15-11-2026 · Contenido técnico redactado de forma original a partir del itinerario de Microsoft.
 
 # 6. Proteger objetos de Unity Catalog
 
@@ -84,6 +84,47 @@ Crear un grupo de lectura, concederle uso de catálogo y esquema y `SELECT` de u
 **Repaso:** diferencia autenticación y autorización; cuándo usar Key Vault; qué controla una managed identity; por qué el acceso al clúster y el acceso a la tabla son permisos distintos.
 
 ---
+
+---
+
+
+## Desarrollo en profundidad: autorización y protección de datos
+
+### Autenticación y autorización son preguntas distintas
+
+La autenticación determina qué identidad intenta acceder. La autorización determina qué operaciones puede ejecutar esa identidad sobre un recurso. Que un usuario inicie sesión correctamente en el workspace no significa que tenga acceso a cualquier tabla de Unity Catalog. Los privilegios deben concederse según funciones reales, idealmente a grupos administrados, y revisarse cuando cambia el rol del empleado.
+
+En Unity Catalog, acceder a una tabla normalmente exige poder resolver los niveles superiores del espacio de nombres y el permiso de lectura adecuado sobre el objeto. La herencia y la administración de permisos se deben comprobar en la versión actual del servicio, especialmente cuando se usan esquemas nuevos o modelos de seguridad específicos.
+
+```sql
+GRANT USE CATALOG ON CATALOG estudio TO `analistas`;
+GRANT USE SCHEMA ON SCHEMA estudio.gold TO `analistas`;
+GRANT SELECT ON TABLE estudio.gold.ventas_mensuales TO `analistas`;
+```
+
+La sintaxis anterior representa un ejemplo de concesión a un principal existente. No crea el grupo y debe ejecutarla alguien con privilegios suficientes. Un permiso `SELECT` no debe usarse como atajo para dar capacidad de escritura o administración.
+
+### Seguridad por filas y columnas
+
+En organizaciones multirregión, una persona puede necesitar solo los registros de su zona. Los filtros de fila responden a esta necesidad sin duplicar decenas de tablas similares. El enmascaramiento de columna puede ocultar identificadores personales o información sensible en consultas, manteniendo la lógica de acceso centralizada. La implementación concreta depende de funciones, políticas y características compatibles con Unity Catalog.
+
+La diferencia principal es semántica: **filtro de filas** reduce qué registros se devuelven; **máscara** modifica qué valor se expone en una columna. Si una consulta usa datos sensibles para calcular agregados, revisa también la posibilidad de inferencia por totales, no únicamente si la columna aparece oculta.
+
+### Identidades de servicio y secretos
+
+Los pipelines necesitan identidad propia y principio de mínimo privilegio. Es preferible emplear identidades y credenciales administradas a pegar cadenas de conexión en notebooks. Los secretos no deben mostrarse en logs, tablas temporales, errores ni parámetros enviados a sistemas de observabilidad. Un repositorio privado tampoco constituye un almacén de contraseñas seguro: las credenciales deben permanecer fuera del código versionado.
+
+### Amenazas habituales y controles
+
+| Riesgo | Control recomendado | Verificación |
+|---|---|---|
+| Analista lee una tabla ajena | Grants a grupos con mínimo privilegio | Prueba con identidad restringida |
+| Contraseña expuesta en un notebook | Identidad administrada / secret management | Revisión de repositorio y logs |
+| Usuario consulta PII no necesaria | Filtros y máscaras | Casos con usuarios de diferentes roles |
+| Pipeline ejecuta con cuenta personal | Principal de servicio con permisos delimitados | Revisar propietario del job |
+| Cambios invisibles en permisos | Auditoría y revisión periódica | Consultar registros y responsables |
+
+**Práctica reproducible:** crea dos grupos de laboratorio: `lectores` y `editores`. Concede lectura al primero y capacidades limitadas de modificación al segundo. Valida que ambos puedan descubrir los objetos previstos y que `lectores` no consiga escribir. Documenta cada error de autorización y distingue falta de acceso al catálogo, al esquema o a la tabla. Después retira los permisos de pruebas.
 
 ---
 

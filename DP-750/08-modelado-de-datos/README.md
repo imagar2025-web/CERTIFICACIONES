@@ -1,7 +1,7 @@
 [🏠 Índice](../README.md) · [← Anterior](../07-gobernar-objetos-de-unity-catalog/README.md) · [Siguiente →](../09-ingesta-de-datos/README.md)
 
 > **Estado de estudio:** ✅ Visto · **Unidades oficiales:** 14 · [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/design-implement-data-modeling-unity-catalog/)  
-> **Versión de apuntes:** 14-11-2026 · Contenido técnico redactado de forma original a partir del itinerario de Microsoft.
+> **Versión de apuntes:** 15-11-2026 · Contenido técnico redactado de forma original a partir del itinerario de Microsoft.
 
 # 8. Diseñar e implementar el modelado de datos
 
@@ -106,6 +106,53 @@ El principal error consiste en optimizar columnas que nunca aparecen en filtros 
 Construye una dimensión de clientes que preserve cambios de ciudad y estado comercial, y unos hechos de pedidos de grano «una línea». Diseña su tratamiento CDC, reglas de no solapamiento, claves y consultas «estado en la fecha del pedido». Razona si un cambio de ciudad debe ser Tipo 1 o Tipo 2 según la necesidad empresarial.
 
 ---
+
+---
+
+
+## Desarrollo en profundidad: historia de negocio, historia Delta y CDC
+
+### Tres conceptos que no deben confundirse
+
+Un modelo **SCD tipo 2** conserva versiones de entidades de negocio; una tabla Delta con **time travel** permite consultar estados anteriores de la tabla que aún estén disponibles; **Change Data Feed** describe cambios realizados desde su activación y dentro de su periodo de disponibilidad. Los tres mecanismos pueden combinarse, pero resuelven problemas diferentes. Si el requisito es reconstruir el perfil del cliente de hace cinco años, un diseño SCD2 con conservación adecuada ofrece semántica de negocio más sólida que confiar únicamente en versiones físicas del almacenamiento.
+
+### Diseñar correctamente intervalos de validez
+
+Supongamos que un cliente cambia de ciudad el 15 de marzo. Una versión representa `[2026-01-01, 2026-03-15)` y la siguiente `[2026-03-15, infinito)`. El corchete inicial indica inclusión y el paréntesis final exclusión. Este convenio evita que dos versiones sean válidas simultáneamente en el instante de cambio. Para reconstruir el perfil a la fecha de una venta, se une la tabla de hechos con la dimensión usando clave de negocio y fecha del evento.
+
+```sql
+SELECT v.id_venta, v.fecha, c.ciudad
+FROM estudio.gold.ventas v
+JOIN estudio.gold.dim_cliente_hist c
+  ON v.id_cliente = c.id_cliente
+ AND v.fecha >= c.valid_from
+ AND (c.valid_to IS NULL OR v.fecha < c.valid_to);
+```
+
+Esta consulta solo es correcta si los intervalos no se solapan y todas las ventas encuentran la versión que corresponde. Las cargas tardías plantean un problema adicional: si un cambio del 10 de marzo llega el día 20, hay que decidir si reabrir intervalos históricos y cómo corregir las asociaciones temporales.
+
+### Distinguir clave de negocio y clave de versión
+
+`id_cliente` identifica la entidad, mientras que una clave sustituta identifica una versión concreta. Una tabla de hechos puede guardar la clave sustituta asignada cuando ocurrió el evento. Si se reasignan versiones por un cambio tardío, puede ser necesario recalcular referencias. Establece la granularidad y las reglas de vigencia antes de diseñar las claves.
+
+### Compromisos de rendimiento
+
+Las consultas más frecuentes suelen filtrar por fecha, cliente o periodo. Pero particionar por cliente generaría miles o millones de directorios y archivos pequeños. Liquid clustering puede ayudar cuando las características de tabla y versión lo permiten; `OPTIMIZE`, políticas de mantenimiento y análisis de estadísticas completan el diseño. El objetivo no es ordenar por todas las columnas, sino mejorar poda de datos y reducir coste para consultas reales.
+
+### Comprobar CDF y time travel sin confundirlos
+
+```sql
+ALTER TABLE estudio.silver.clientes
+SET TBLPROPERTIES (delta.enableChangeDataFeed = true);
+
+DESCRIBE HISTORY estudio.silver.clientes;
+
+SELECT * FROM table_changes('estudio.silver.clientes', 1);
+```
+
+El número de versión `1` es ilustrativo: verifica qué versiones existen y desde cuándo se habilitó CDF. También comprueba que tu entorno admite la función y que no se han eliminado los datos necesarios por retención. Para time travel, `SELECT ... VERSION AS OF n` lee el estado de una versión retenida; para una auditoría duradera conserva tus propios datos historizados.
+
+**Ejercicio:** diseña un dataset de cinco clientes con dos cambios de ciudad, un cambio tardío y un evento duplicado. Escribe las reglas de cierre e inserción de versiones y comprueba que la consulta por fecha siempre devuelve una sola versión por cliente. Añade una aserción que detecte intervalos solapados antes de publicar la tabla Gold.
 
 ---
 

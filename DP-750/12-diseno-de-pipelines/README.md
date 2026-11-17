@@ -1,7 +1,7 @@
 [🏠 Índice](../README.md) · [← Anterior](../11-calidad-de-datos/README.md) · [Siguiente →](../13-implementacion-lakeflow-jobs/README.md)
 
 > **Estado de estudio:** 🕒 Pendiente · **Unidades oficiales:** 10 · [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/design-implement-data-pipelines/)  
-> **Versión de apuntes:** 14-11-2026 · Contenido técnico redactado de forma original a partir del itinerario de Microsoft.
+> **Versión de apuntes:** 15-11-2026 · Contenido técnico redactado de forma original a partir del itinerario de Microsoft.
 
 # 12. Diseño e implementación de canalizaciones de datos
 
@@ -74,6 +74,43 @@ Documenta el contrato de cada etapa: entradas, columnas requeridas, reglas de sa
 2. **¿Por qué no conviene tratar siempre los fallos con retry?** Un error determinista persistirá y solo encarecerá la carga.
 3. **¿Qué previene una clave de lote e idempotencia?** Duplicaciones al reejecutar una etapa.
 4. **¿Por qué medir los rechazados en Silver?** Para saber si Gold se calculó sobre un subconjunto fiable o una muestra sesgada.
+
+---
+
+
+## Desarrollo en profundidad: construir un pipeline que se pueda operar
+
+### Un pipeline es un contrato de dependencias
+
+Diseñar un pipeline exige definir fuentes, transformaciones, artefactos finales y precedencias. No basta con encadenar notebooks manualmente: hay que saber qué tarea se puede reintentar sin efectos colaterales, qué métricas indican éxito y qué sucede cuando una dependencia falla. La arquitectura Medallion ayuda a representar responsabilidades, pero el plan real debe reflejar decisiones de datos y operaciones.
+
+```mermaid
+flowchart TD
+ A[Ingerir origen] --> B[Validar Bronze]
+ B -->|Correcto| C[Transformar Silver]
+ B -->|Error| Q[Cuarentena y aviso]
+ C --> D[Publicar Gold]
+ D --> E[Pruebas de calidad]
+ E --> F[Consumo]
+```
+
+### Notebooks imperativos frente a pipelines declarativos
+
+Un notebook expresa pasos concretos: cargar, filtrar, transformar, escribir. Ofrece control fino y es útil en lógica personalizada. Un pipeline declarativo permite describir datasets y dependencias para que el motor administre aspectos de la ejecución. Ambos enfoques pueden ser válidos; el diseño depende de la disponibilidad de conectores, complejidad, observabilidad, operaciones soportadas y forma en que se gestionan los despliegues.
+
+### Reintentos, idempotencia y puntos de control
+
+El fallo durante la publicación de Gold puede ocurrir después de haber actualizado Silver. Reejecutar el pipeline entero debe estar previsto. Cargas con `append` sin control podrían duplicar datos; una estrategia de claves, marcas de agua, checkpoints y `MERGE` puede hacer los reintentos seguros. El **exactly-once** no debe darse por supuesto de extremo a extremo: depende de la semántica del origen y del destino y de cómo se diseñen los efectos externos.
+
+### Parámetros y separación de entornos
+
+No incrustes en el código el catálogo de producción ni las rutas particulares de desarrollo. Parametriza entorno, fecha lógica y ubicación de entrada, y valida los valores. El mismo código puede promoverse entre desarrollo y producción con configuración separada. Los permisos y secretos también deben segregarse; usar la misma identidad de servicio en todos los entornos debilita los límites de seguridad.
+
+### Gestión de fallos
+
+Define fallos transitorios (limitación de recursos, red), fallos de datos (esquema incompatible, claves duplicadas) y fallos de código (excepción). Reintentar repetidamente un dato inválido no lo arregla; reintentar una limitación temporal puede ser adecuado. Introduce alertas con contexto útil: identificador de ejecución, tarea, periodo procesado, tamaño del lote y enlace a logs. Evita enviar datos sensibles en el mensaje de alerta.
+
+**Ejercicio de diseño:** crea un DAG para la carga diaria de ventas y la actualización de una dimensión SCD2. La publicación de Gold no debe comenzar hasta completar Silver y sus controles. Propón qué tareas pueden ejecutarse en paralelo y qué ocurre si falla solo un producto de datos. Prepara una tabla de escenarios con un fallo en la extracción, otro en validación y otro al escribir Gold; indica si se reintenta, se repara o se aborta.
 
 ---
 

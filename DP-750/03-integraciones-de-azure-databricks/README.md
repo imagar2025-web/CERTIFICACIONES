@@ -1,7 +1,7 @@
 [🏠 Índice](../README.md) · [← Anterior](../02-arquitectura-de-azure-databricks/README.md) · [Siguiente →](../04-seleccion-y-configuracion-de-computo/README.md)
 
 > **Estado de estudio:** ✅ Visto · **Unidades oficiales:** 10 · [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/understand-azure-databricks-integrations/)  
-> **Versión de apuntes:** 14-11-2026 · Contenido técnico redactado de forma original a partir del itinerario de Microsoft.
+> **Versión de apuntes:** 15-11-2026 · Contenido técnico redactado de forma original a partir del itinerario de Microsoft.
 
 # 3. Integraciones de Azure Databricks
 
@@ -76,6 +76,54 @@ Microsoft Foundry aporta herramientas para construir soluciones y agentes de IA.
 - ¿Qué debe revisarse antes de conectar Fabric? **Identidad, seguridad efectiva, formatos admitidos y posible transferencia de datos**.
 
 ---
+
+---
+
+
+## Desarrollo en profundidad: integrar Databricks en el ecosistema Azure
+
+### Diferenciar conexión, ingestión y consumo
+
+No todas las integraciones hacen lo mismo. Una conexión puede permitir consultar un origen sin moverlo, una canalización de ingestión copia o sincroniza datos, mientras que una herramienta de BI consume tablas ya preparadas para obtener indicadores. Si se mezcla esta responsabilidad, es fácil diseñar dos transformaciones distintas para la misma métrica o duplicar almacenamiento sin motivo.
+
+En una arquitectura representativa, ADF coordina extracciones o dependencias entre sistemas; Azure Databricks procesa datos y los almacena como tablas Delta; Unity Catalog controla el acceso a los productos de datos; Power BI consulta un modelo analítico preparado, en lugar de reconstruir cada regla de negocio. La elección de conectividad dependerá del volumen, el modo de actualización y el servicio concreto utilizado.
+
+```mermaid
+flowchart LR
+ O[(Origen SQL/API/archivos)] --> I[Ingestión / orquestación]
+ I --> B[(Bronze)]
+ B --> S[(Silver)]
+ S --> G[(Gold)]
+ G --> BI[Power BI o consumidores SQL]
+ UC[Unity Catalog] -.gobierno.-> B
+ UC -.gobierno.-> S
+ UC -.gobierno.-> G
+```
+
+### Azure Data Factory y Databricks
+
+Azure Data Factory resulta útil cuando debes relacionar diversas fuentes, ejecutar copias y coordinar dependencias externas. Databricks aporta un motor de transformaciones escalable y herramientas de ingeniería de datos. Si un pipeline de ADF invoca un notebook, considera la identidad usada, los parámetros de entrada, el resultado de salida, los reintentos y dónde se guardan los logs. No conviertas cada notebook en una caja negra sin contrato: documenta datos requeridos, tabla generada, estrategia ante duplicados y criterios de éxito.
+
+### Power BI y los data marts
+
+La capa de consumo debe exponer tablas o vistas con un grano bien definido. Power BI puede utilizar un mecanismo de conexión admitido por Azure Databricks; la elección entre importar datos y consultarlos bajo demanda afecta frescura, latencia y coste. Preparar una tabla Gold de ventas mensuales reduce trabajo repetido y facilita definiciones consistentes, pero no elimina la necesidad de seguridad de datos a nivel de consumidor.
+
+```sql
+CREATE OR REPLACE VIEW estudio.gold.ventas_por_mes AS
+SELECT date_trunc('MONTH', fecha) AS mes,
+       COUNT(*) AS num_ventas,
+       SUM(importe) AS importe_total
+FROM estudio.silver.ventas
+GROUP BY date_trunc('MONTH', fecha);
+```
+
+Si la vista se usa desde varios informes, los equipos comparten las reglas de cálculo. Aun así, debes validar el tipo de dato `fecha`, los anulados y los importes nulos; un resultado numérico no implica automáticamente calidad de negocio.
+
+### VS Code, repositorios y ciclo de desarrollo
+
+La integración con herramientas de desarrollo debe apoyar la trazabilidad. Mantén el código versionado, usa ramas de trabajo, revisa cambios con pull requests y evita registrar credenciales. Los notebooks interactivos sirven para explorar, pero un pipeline productivo necesita parámetros, validaciones y despliegues repetibles. Distingue sincronizar código con un repositorio de ejecutar un trabajo en el workspace: son operaciones y permisos distintos.
+
+**Ejercicio de arquitectura:** diseña una integración entre una base SQL y un informe semanal. Especifica cómo detectar cambios, qué servicio extrae, dónde almacenas Bronze, quién aplica reglas Silver, qué modelo Gold consume BI, cómo se recupera un fallo y qué ocurre si vuelves a ejecutar un día. El criterio clave es evitar duplicados y garantizar que un reintento no cambie erróneamente los totales.
 
 ---
 

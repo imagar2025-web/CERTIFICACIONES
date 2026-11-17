@@ -1,7 +1,7 @@
 [🏠 Índice](../README.md) · [← Anterior](../04-seleccion-y-configuracion-de-computo/README.md) · [Siguiente →](../06-proteger-objetos-de-unity-catalog/README.md)
 
 > **Estado de estudio:** ✅ Visto · **Unidades oficiales:** 12 · [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/create-and-organize-objects-in-unity-catalog/)  
-> **Versión de apuntes:** 14-11-2026 · Contenido técnico redactado de forma original a partir del itinerario de Microsoft.
+> **Versión de apuntes:** 15-11-2026 · Contenido técnico redactado de forma original a partir del itinerario de Microsoft.
 
 # 5. Crear y organizar objetos en Unity Catalog
 
@@ -97,6 +97,48 @@ Diseña `estudio.ventas` con dos tablas (`clientes`, `pedidos`), una vista de pe
 **Preguntas:** ¿cuáles son los tres niveles de nombres? ¿Qué diferencia una view de una materialized view? ¿Cuándo conviene un volumen? ¿Para qué sirve un foreign catalog?
 
 ---
+
+---
+
+
+## Desarrollo en profundidad: diseñar la jerarquía de gobierno
+
+### El identificador de tres niveles no es una convención estética
+
+En Unity Catalog una tabla se identifica mediante `catalogo.esquema.objeto`. Este espacio de nombres permite separar áreas, equipos y entornos. Un catálogo suele representar una frontera de organización o gobierno; dentro de él, los esquemas agrupan objetos relacionados. La elección exacta es organizativa: una empresa puede usar catálogos por entorno y dominio, o una estrategia diferente conforme a políticas y necesidades de uso compartido.
+
+Por ejemplo, `produccion.finanzas.movimientos` comunica que el objeto pertenece a un catálogo productivo y un esquema financiero. En cambio, una tabla temporal de laboratorio debería ubicarse en un catálogo de desarrollo para evitar que un borrado accidental afecte a datos reales. Los nombres deben ser estables, comprensibles y resistentes a reestructuraciones frecuentes.
+
+### Tablas, vistas, vistas materializadas y volúmenes
+
+Una tabla almacena registros persistentes; una vista expresa una consulta lógica cuya resolución puede depender de las tablas originales; una vista materializada conserva resultados administrados que deben actualizarse según las capacidades del servicio; un volumen gestiona archivos que no se consultan necesariamente como filas y columnas. La elección responde al modo de consumo: no crees una tabla para guardar un PDF ni un volumen para sustituir un modelo analítico.
+
+```sql
+CREATE SCHEMA IF NOT EXISTS estudio.comercial;
+
+CREATE TABLE IF NOT EXISTS estudio.comercial.clientes (
+  id_cliente BIGINT,
+  nombre STRING,
+  alta DATE
+) USING DELTA;
+
+CREATE OR REPLACE VIEW estudio.comercial.clientes_recientes AS
+SELECT id_cliente, nombre
+FROM estudio.comercial.clientes
+WHERE alta >= DATE '2026-01-01';
+```
+
+Antes de ejecutar las sentencias debes disponer de permisos adecuados sobre el catálogo y el esquema. La tabla del ejemplo no contiene claves primarias físicas que impidan duplicados automáticamente: la integridad se gestiona con reglas y controles compatibles con el motor.
+
+### Managed y external: quién controla el ciclo de vida
+
+Una tabla administrada simplifica la responsabilidad sobre ubicación y mantenimiento; una tabla externa referencia datos ubicados fuera de ese control directo. En ambos casos puede existir gobierno mediante Unity Catalog, pero eliminar un objeto de metadatos no tiene necesariamente el mismo impacto físico. Antes de usar `DROP TABLE`, consulta tipo de tabla, ubicación y política de retención. Cuando intervienen ubicaciones externas, credenciales de almacenamiento y grants, la autorización debe mantenerse coherente entre nube y metadatos.
+
+### Convenciones, descubrimiento y contratos
+
+Documenta propietario funcional, frecuencia de actualización, clasificación de datos, grano, fuente y consumidores. Un catálogo que permite localizar tablas pero no explica qué significan sus columnas sigue siendo difícil de usar. Las etiquetas y comentarios ayudan a la búsqueda, pero no sustituyen permisos, máscaras y validación.
+
+**Caso de diseño:** tienes departamentos de operaciones y finanzas que necesitan compartir una dimensión de calendario sin compartir los movimientos bancarios. Propón un catálogo común para activos de referencia y catálogos o esquemas específicos para datos sensibles. Explica qué identidades necesitan `USE CATALOG`, `USE SCHEMA` y `SELECT`, y cómo un nuevo analista descubriría los datos autorizados sin ver los objetos restringidos.
 
 ---
 

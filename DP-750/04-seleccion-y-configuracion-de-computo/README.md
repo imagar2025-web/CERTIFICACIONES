@@ -1,7 +1,7 @@
 [🏠 Índice](../README.md) · [← Anterior](../03-integraciones-de-azure-databricks/README.md) · [Siguiente →](../05-crear-y-organizar-objetos-en-unity-catalog/README.md)
 
 > **Estado de estudio:** ✅ Visto · **Unidades oficiales:** 9 · [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/select-and-configure-compute/)  
-> **Versión de apuntes:** 14-11-2026 · Contenido técnico redactado de forma original a partir del itinerario de Microsoft.
+> **Versión de apuntes:** 15-11-2026 · Contenido técnico redactado de forma original a partir del itinerario de Microsoft.
 
 # 4. Selección y configuración de cómputo
 
@@ -67,6 +67,55 @@ Seguridad recomendada: conceder permisos a grupos, usar identidades de servicio 
 **Claves de evaluación:** `serverless ≠ gratuito`, Photon no acelera todo, tener acceso al cluster no concede acceso a tablas.
 
 ---
+
+---
+
+
+## Desarrollo en profundidad: dimensionar, aislar y pagar el cómputo
+
+### Por qué el número de nodos no explica el rendimiento
+
+El rendimiento depende de los recursos disponibles y de la forma real en que Spark divide el trabajo. Los cores condicionan el número de tareas que pueden progresar simultáneamente; la memoria determina el tamaño de estructuras intermedias antes de escribir en disco; el almacenamiento local se emplea en shuffle y cachés. Un cuello de botella de CPU puede responder al aumento de paralelismo, mientras que un join que provoca *spill* necesita investigar memoria, cardinalidad y estrategia de unión. No hay una configuración universalmente más rápida.
+
+Para estudiar una carga, registra volumen de entrada, duración, número de tareas, utilización de CPU, memoria, bytes de shuffle y datos escritos a disco. Cambia **una** variable de cada vez en las pruebas. Si al duplicar recursos solo reduces un 5 % la duración, quizá la consulta está limitada por I/O, skew, sobrecarga inicial o paralelismo insuficiente.
+
+### Tamaño de nodos frente a cantidad de workers
+
+Dos clústeres con el mismo total de cores pueden comportarse de modo diferente. Un conjunto pequeño de nodos grandes reduce algunas comunicaciones entre máquinas, pero ofrece menos unidades físicas de escalado. Uno de nodos pequeños puede mejorar distribución de tareas y elasticidad, aunque introduce más comunicación en ciertos patrones. Los tipos de VM optimizados para memoria, CPU o almacenamiento tienen usos diferentes; hay que comprobar su disponibilidad regional y compatibilidad actual en Azure.
+
+### Autoscaling y auto-termination
+
+El escalado automático ajusta trabajadores dentro de límites configurados. Es útil ante variabilidad de carga, pero no convierte automáticamente una consulta mal diseñada en eficiente. La terminación automática reduce consumo de clústeres inactivos; debe configurarse según si el cómputo es interactivo o de trabajos programados. Una carga corta frecuente puede sufrir por arranques repetidos, mientras que mantener cómputo encendido sin uso supone coste. Distingue siempre costes de infraestructura, consumo de DBU y los posibles costes de servicios dependientes.
+
+### Modos de acceso y autorización
+
+Seleccionar recursos implica también establecer quién puede usarlos, modificarlos o administrarlos. Los modos de acceso apropiados dependen del aislamiento, compatibilidad de Runtime, bibliotecas y políticas corporativas. El permiso de adjuntar un notebook no debe interpretarse como permiso de administrar todo el recurso. Es recomendable conceder el nivel mínimo necesario y verificar que los usuarios acceden a Unity Catalog con su propia identidad y políticas.
+
+### Comparación operativa de modalidades
+
+| Necesidad | Modalidad a evaluar | Aspectos que debes comprobar |
+|---|---|---|
+| Análisis puntual mediante SQL | SQL warehouse | Latencia, escalado, concurrencia, coste |
+| Notebook de exploración | Cómputo interactivo o serverless compatible | Sesión, bibliotecas, permisos y arranque |
+| ETL nocturno repetitivo | Cómputo de job | Terminación, reintentos, dependencias |
+| Machine learning especializado | Runtime y hardware adecuados | GPU, bibliotecas, límites del servicio |
+
+No des por supuesto que todas las características están disponibles en todas las regiones, versiones y planes. La documentación oficial es la autoridad para la lista exacta de modalidades soportadas.
+
+### Mini laboratorio: comparar dos configuraciones
+
+Elige una transformación repetible, por ejemplo agregación de pedidos y join con clientes. Ejecuta tres veces el mismo notebook en un entorno pequeño y registra la mediana de tiempo y métricas de Spark UI. Repite con un recurso diferente manteniendo datos y código iguales. Calcula tiempo, consumo y coste aproximado según la tarifa vigente de tu región. Después fuerza una salida amplia a disco y observa si aparece *spill*; explica por qué aumentar la memoria podría ayudar o por qué un filtro temprano sería más económico.
+
+```python
+from pyspark.sql import functions as F
+resultado = (spark.table("estudio.silver.pedidos")
+    .filter(F.col("estado") == "confirmado")
+    .groupBy("id_cliente")
+    .agg(F.sum("importe").alias("total")))
+resultado.explain("formatted")
+```
+
+Recuerda que `explain()` muestra el plan estimado y las métricas de la ejecución real se consultan en las herramientas de perfilado correspondientes. No compares solo la duración de la celda si en una prueba hay caché y en otra no.
 
 ---
 

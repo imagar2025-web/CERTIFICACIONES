@@ -1,7 +1,7 @@
 [🏠 Índice](../README.md) · [← Anterior](../01-explorar-azure-databricks/README.md) · [Siguiente →](../03-integraciones-de-azure-databricks/README.md)
 
 > **Estado de estudio:** ✅ Visto · **Unidades oficiales:** 7 · [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/understand-azure-databricks-architecture/)  
-> **Versión de apuntes:** 14-11-2026 · Contenido técnico redactado de forma original a partir del itinerario de Microsoft.
+> **Versión de apuntes:** 15-11-2026 · Contenido técnico redactado de forma original a partir del itinerario de Microsoft.
 
 # 2. Arquitectura de Azure Databricks
 
@@ -93,6 +93,45 @@ El almacenamiento del workspace contiene elementos de usuario (notebooks, consul
 > **Práctica de consolidación:** dibuja la cuenta, dos workspaces, un metastore, dos catálogos y un ADLS Gen2, y anota quién administra cada pieza.
 
 ---
+
+---
+
+
+## Desarrollo en profundidad: arquitectura y recorrido de una consulta
+
+### Plano de control y plano de datos
+
+La arquitectura separa las responsabilidades de administración y coordinación de las de ejecución. El **control plane** aloja servicios de gestión del workspace, coordinación de trabajos, metadatos operativos y funciones de interfaz. El **compute plane** ejecuta los procesos necesarios para notebooks, Spark y SQL según la modalidad elegida. La distribución exacta de servicios y el aislamiento de red dependen de la modalidad de implementación y de la configuración de Azure Databricks, de modo que no conviene dibujar una arquitectura universal válida para todos los workspaces.
+
+El almacenamiento duradero está desacoplado de los nodos de ejecución. Los datos pueden residir en Azure Data Lake Storage y estar expuestos mediante objetos gobernados por Unity Catalog. Delta Lake añade una capa transaccional sobre archivos de datos: Spark no se limita a leer una carpeta Parquet, sino que considera el estado coherente definido en el registro de transacciones de la tabla.
+
+### Recorrido de `SELECT` y de un trabajo Spark
+
+Cuando un usuario ejecuta una consulta, se comprueba que su identidad pueda usar los objetos y el cómputo correspondiente. El motor analiza la consulta, resuelve los metadatos, optimiza el plan y envía trabajo a los recursos disponibles. En Spark, los pasos que requieren reordenar datos por claves (joins o agregaciones distribuidas) suelen implicar un *shuffle*. Un shuffle obliga a mover datos entre particiones, consume red y puede escribir temporalmente a disco si no hay memoria suficiente. Por eso una consulta aparentemente pequeña puede ser costosa si produce una unión con mucha cardinalidad.
+
+```mermaid
+flowchart LR
+ U[Usuario o job] --> W[Workspace y control]
+ W --> P[Motor SQL / Spark]
+ P --> UC[Unity Catalog: metadatos y permisos]
+ P --> E[Procesamiento distribuido]
+ E <--> ADLS[Almacenamiento de datos]
+ ADLS --> D[Delta: archivos + registro]
+```
+
+El diagrama muestra relaciones lógicas, no la ubicación física exacta de cada servicio. Al diagnosticar un problema debes identificar si es de autenticación, autorización, capacidad de ejecución, planificación Spark, acceso al almacenamiento o consistencia de los datos.
+
+### Driver, executors, particiones y tareas
+
+El driver mantiene el contexto de la aplicación y coordina la ejecución. Los executors procesan particiones; cada tarea suele operar sobre una partición en una etapa. El número de archivos, el tamaño de los datos, la distribución de claves y las operaciones del plan afectan al paralelismo real. Tener más nodos no elimina un cuello de botella causado por una sola partición excesivamente grande. A la inversa, una consulta sencilla puede no aprovechar todos los cores que se han provisionado.
+
+**Ejemplo de sesgo:** si el 90 % de las ventas pertenece a un único cliente, una agregación por cliente concentra mucho trabajo en la partición de esa clave. El problema no se resuelve necesariamente ampliando el clúster; conviene analizar distribuciones, plan de ejecución y alternativas como preagregación o salting cuando sea apropiado.
+
+### Red, seguridad y decisiones de diseño
+
+El acceso a ADLS requiere una identidad y permisos sobre los recursos correctos. Un usuario que ve una tabla en el catálogo no necesariamente puede administrarla. La gestión de credenciales debe evitar secretos incrustados en notebooks y priorizar identidades administradas y mecanismos de acceso gobernados. Para entornos empresariales, considera conectividad privada, controles de salida, DNS, restricciones de red y políticas de cómputo de acuerdo con la arquitectura admitida.
+
+**Laboratorio de diagnóstico:** explica cuál de estas capas revisarías cuando (a) no puedes entrar al workspace, (b) sí puedes entrar pero no iniciar un clúster, (c) el clúster ejecuta Python pero devuelve `PERMISSION_DENIED` en una tabla, (d) una unión de tablas tarda mucho mientras el número de filas de salida es pequeño. Para (c) empieza por permisos y contexto de catálogo; para (d), por el plan y Spark UI, antes de aumentar recursos indiscriminadamente.
 
 ---
 

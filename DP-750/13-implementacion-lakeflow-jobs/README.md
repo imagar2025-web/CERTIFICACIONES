@@ -1,7 +1,7 @@
 [🏠 Índice](../README.md) · [← Anterior](../12-diseno-de-pipelines/README.md)
 
 > **Estado de estudio:** 🕒 Pendiente · **Unidades oficiales:** 9 · [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/implement-lakeflow-jobs/)  
-> **Versión de apuntes:** 14-11-2026 · Contenido técnico redactado de forma original a partir del itinerario de Microsoft.
+> **Versión de apuntes:** 15-11-2026 · Contenido técnico redactado de forma original a partir del itinerario de Microsoft.
 
 # 13. Implementación y operación de Lakeflow Jobs
 
@@ -60,6 +60,53 @@ La ejecución a las 02:00 puede ser razonable para un informe matutino, pero un 
 2. **¿Qué ocurre al sustituir un trigger de llegada por uno cron?** La ejecución deja de depender de archivos y pasa a ocurrir a las horas programadas.
 3. **¿Cuál es el riesgo de reintentar un append?** Repetir filas si no se conserva una clave de lote y deduplicación.
 4. **¿De qué sirve la vista Runs?** Permite localizar errores, tiempos, parámetros y la tarea que bloqueó el pipeline.
+
+---
+
+
+## Desarrollo en profundidad: orquestación diaria con Lakeflow Jobs
+
+### Job, tarea, ejecución y trigger
+
+Un **job** define qué tareas deben ejecutarse y en qué condiciones. Una **tarea** puede referirse a un notebook, un pipeline u otro tipo de recurso soportado. Una **ejecución** es una instancia concreta del job o de una tarea y tiene estado, duración, parámetros y resultados. El **trigger** determina cuándo empieza: manual, programado u otros mecanismos disponibles. Estas entidades no son equivalentes: modificar la programación no cambia el código de una tarea y reiniciar un job no implica necesariamente borrar el estado de sus datos.
+
+### Diseño de un DAG con dependencias
+
+Supongamos que `ingest_clientes` y `ingest_ventas` pueden ejecutarse en paralelo. `silver_clientes` depende del primero; `silver_ventas` del segundo. `publicar_gold` depende de ambos, y una última tarea valida los indicadores publicados. Si solo una rama falla, el sistema debe ofrecer información suficiente para reparar la parte defectuosa sin repetir innecesariamente tareas costosas.
+
+```mermaid
+flowchart LR
+ IC[Ingesta clientes] --> SC[Silver clientes]
+ IV[Ingesta ventas] --> SV[Silver ventas]
+ SC --> G[Publicar Gold]
+ SV --> G
+ G --> V[Validación final]
+```
+
+### Programaciones y zonas horarias
+
+Una programación debe documentar zona horaria, calendario, objetivo de finalización y comportamiento durante cambios de horario. Un job a las 02:30 puede verse afectado por el cambio de hora si utiliza una zona con horario de verano. Para ejecuciones con datos diarios, conviene calcular una **fecha lógica de proceso** independiente de `current_timestamp()` y pasarla como parámetro. Así una reparación del día anterior procesa exactamente el periodo esperado.
+
+### Concurrencia y deduplicación
+
+Si una ejecución dura más que su intervalo de programación, puede coincidir con otra. Limitar concurrencia protege recursos y evita escrituras simultáneas incompatibles. Pero impedir solapamientos no sustituye la idempotencia: reintentos manuales, reparaciones y ejecuciones lanzadas por usuarios también deben gestionar entradas repetidas.
+
+### Alertas, reintentos y recuperación
+
+Configura notificaciones a responsables pertinentes y evita un exceso de alertas que termine ignorándose. Establece máximo de reintentos, intervalos y, cuando proceda, timeout. Un error de permisos no suele resolverse repitiendo diez veces; una indisponibilidad transitoria podría hacerlo. Después de una incidencia, determina qué datasets se escribieron y si los consumidores observaron un estado parcial.
+
+### Checklist operativa
+
+| Pregunta | Resultado esperado |
+|---|---|
+| ¿Quién ejecuta el job? | Principal autorizado y estable |
+| ¿Qué datos procesa? | Parámetros y periodo definidos |
+| ¿Cómo evita duplicados? | Idempotencia y claves verificadas |
+| ¿Qué sucede si falla? | Estado visible, reintento o reparación controlados |
+| ¿Cuándo se avisa? | Umbrales y destinatarios documentados |
+| ¿Cómo se audita? | Logs, historial y enlaces a ejecuciones |
+
+**Práctica:** configura en un entorno de pruebas un job con dos notebooks dependientes, un parámetro `fecha_proceso`, una alerta de fallo y una política de reintentos apropiada. Provoca una excepción controlada en la segunda tarea, observa los estados y practica la reparación. Finalmente registra la diferencia entre lanzar el job, reiniciar una ejecución completa y reparar únicamente tareas fallidas; la disponibilidad exacta de opciones depende de la interfaz y las funciones habilitadas.
 
 ---
 

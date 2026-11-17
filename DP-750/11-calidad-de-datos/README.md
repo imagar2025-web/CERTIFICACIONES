@@ -1,7 +1,7 @@
 [🏠 Índice](../README.md) · [← Anterior](../10-limpieza-transformacion-y-carga/README.md) · [Siguiente →](../12-diseno-de-pipelines/README.md)
 
 > **Estado de estudio:** 🕒 Pendiente · **Unidades oficiales:** 8 · [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/implement-manage-data-quality-constraints-unity-catalog/)  
-> **Versión de apuntes:** 14-11-2026 · Contenido técnico redactado de forma original a partir del itinerario de Microsoft.
+> **Versión de apuntes:** 15-11-2026 · Contenido técnico redactado de forma original a partir del itinerario de Microsoft.
 
 # 11. Implementar y gestionar la calidad de datos en Azure Databricks
 
@@ -90,6 +90,44 @@ Define umbrales de alerta que no se conviertan en ruido, responsable de la incid
 2. **¿Cuándo escogerías FAIL en lugar de DROP?** Si continuar genera resultados empresarialmente inseguros o inconsistentes.
 3. **¿Por qué se inspecciona `_rescued_data`?** Porque contiene campos no reconocidos o incompatibles que requieren una decisión de modelado.
 4. **¿Un cast de texto a decimal garantiza importes válidos?** No: puede fallar, y aun convertido el importe puede estar fuera del rango esperado.
+
+---
+
+
+## Desarrollo en profundidad: diseñar contratos verificables de calidad
+
+### Calidad es una propiedad medible
+
+Un dato puede ser sintácticamente válido pero incorrecto para el negocio. Por ejemplo, una columna `importe` de tipo `DOUBLE` permite `-100.0`, aunque un pedido confirmado quizá nunca debería tener importe negativo. Conviene separar controles estructurales (columnas, tipos, claves), controles de contenido (rangos, valores permitidos), consistencia entre entidades y frescura (cuánto tarda en llegar la información).
+
+Cada regla debe tener nombre, severidad, propietario y acción cuando se incumple. La respuesta no siempre es eliminar la fila: para datos auditables puede ser mejor enviarla a una zona de cuarentena con motivo de rechazo y metadatos de origen.
+
+### Schema enforcement y schema evolution
+
+**Enforcement** evita aceptar estructuras incompatibles con el esquema del destino. **Evolution** permite incorporar cambios compatibles cuando está configurado explícitamente. Si una fuente cambia `precio` de número a texto, dejar que todo se convierta automáticamente puede destruir garantías analíticas. Si agrega una columna opcional, tal vez quieras aceptarla y registrarla. El **schema drift** debe tratarse como un acontecimiento observable, no como una sorpresa silenciosa.
+
+```python
+from pyspark.sql import functions as F
+pedidos = spark.table("estudio.bronze.pedidos")
+validos = pedidos.filter(
+    F.col("id_pedido").isNotNull() &
+    F.col("importe").isNotNull() &
+    (F.col("importe") >= 0)
+)
+rechazados = pedidos.exceptAll(validos)
+```
+
+`exceptAll` ilustra cómo conservar duplicados en una diferencia de datasets, pero no es el mecanismo más eficiente ni siempre el más conveniente para cuarentena. En proyectos reales, añade una columna `motivo_rechazo` y separa datos por condición para poder explicar por qué se descartó cada fila.
+
+### Expectations en Lakeflow Declarative Pipelines
+
+Las expectativas expresan condiciones de calidad asociadas al procesamiento. Según la sintaxis y las capacidades del pipeline pueden registrarse incumplimientos, descartar filas o hacer fallar una actualización. La selección tiene consecuencias: descartar un dato incorrecto es cómodo para una tabla de consumo, pero puede ocultar pérdida de registros; detener la actualización protege la integridad a costa de disponibilidad. Para datos financieros, un rechazo explícito y rastreable suele ser preferible a una eliminación silenciosa.
+
+### Métricas y umbrales
+
+Mide tanto el número absoluto de errores como su porcentaje. Diez filas incorrectas en una ingestión de veinte es alarmante; diez en cien millones puede requerir otro tratamiento. Una regla de unicidad sobre `id_pedido` puede ser equivocada si la tabla tiene grano «una línea de pedido»; en ese caso la clave sería `(id_pedido, num_linea)`.
+
+**Laboratorio de calidad:** construye diez filas con dos importes negativos, un identificador nulo, una fecha inválida y un registro duplicado. Define el grano y clasifica las incidencias. Carga válidos y rechazados en tablas distintas, añade métricas por motivo y simula un cambio de esquema en el origen. En cada paso explica si el proceso continúa, omite registros o se detiene; la decisión debe obedecer a una política documentada.
 
 ---
 

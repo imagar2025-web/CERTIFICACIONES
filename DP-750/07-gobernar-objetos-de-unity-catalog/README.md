@@ -1,7 +1,7 @@
 [🏠 Índice](../README.md) · [← Anterior](../06-proteger-objetos-de-unity-catalog/README.md) · [Siguiente →](../08-modelado-de-datos/README.md)
 
 > **Estado de estudio:** ✅ Visto · **Unidades oficiales:** 10 · [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/govern-unity-catalog-objects/)  
-> **Versión de apuntes:** 14-11-2026 · Contenido técnico redactado de forma original a partir del itinerario de Microsoft.
+> **Versión de apuntes:** 15-11-2026 · Contenido técnico redactado de forma original a partir del itinerario de Microsoft.
 
 # 7. Gobernar objetos de Unity Catalog
 
@@ -73,6 +73,35 @@ Elegir una estrategia requiere conocer el destinatario, credenciales, revocació
 Documenta una tabla con su propietario, granularidad y clasificación. Diseña una política que proteja atributos personales, un procedimiento para revisar linaje antes de renombrar una columna y una retención adecuada para auditoría. Explica por qué las versiones Delta antiguas no son sustituto automático de una tabla histórica de clientes.
 
 ---
+
+---
+
+
+## Desarrollo en profundidad: gobernar el ciclo de vida del dato
+
+### Gobierno no es únicamente permisos
+
+El gobierno de datos incluye saber qué existe, quién es responsable, dónde se utiliza, cuál es su sensibilidad, de dónde procede y qué políticas determinan su retención. Una tabla perfectamente protegida puede seguir siendo un problema si nadie conoce su linaje o su definición de negocio. Unity Catalog aporta un punto de control común para muchos de estos aspectos, pero la calidad del gobierno depende también de los procesos de la organización.
+
+### Linaje y análisis de impacto
+
+El linaje registra relaciones entre entradas, transformaciones y salidas cuando los mecanismos del servicio pueden capturarlas. Si una columna `importe_total` en Gold procede de `importe` y `descuento` en Silver, el linaje ayuda a responder qué informes podrían verse afectados por cambiar una de las columnas de origen. No equivale a documentar toda la lógica funcional y no todos los procesos externos necesariamente quedan representados.
+
+**Ejemplo:** un equipo necesita cambiar el tipo de dato de `id_cliente` de texto a entero. Antes del cambio consulta consumidores, pipelines y vistas dependientes. Puede haber joins que asumen ceros a la izquierda y se romperían al convertir a entero. El análisis de impacto debe combinar linaje con pruebas y revisión de contratos.
+
+### Etiquetas, clasificación y propiedad
+
+Las etiquetas ayudan a clasificar activos por sensibilidad, dominio, criticidad o necesidades de tratamiento. Un diseño mantenible define un vocabulario común en lugar de permitir diez variantes de `confidencial`. La propiedad identifica quién debe aprobar cambios, responder ante incidencias y mantener documentación. En objetos compartidos conviene diferenciar propietario técnico de propietario funcional.
+
+### Retención frente a recuperación
+
+Con Delta Lake puedes consultar versiones antiguas dentro del periodo de retención disponible, pero la existencia de un historial transaccional no garantiza conservación indefinida. Políticas de limpieza física, requisitos regulatorios y recuperación de desastres deben considerarse por separado. Para SCD2 o auditoría a largo plazo se necesita un diseño explícito, no depender solo del *time travel*.
+
+### Auditoría y uso compartido
+
+Los registros de auditoría sirven para investigar operaciones y cambios relevantes, sujetos a la configuración y disponibilidad del entorno. Delta Sharing permite escenarios de intercambio gobernado: antes de compartir, identifica el destinatario, los objetos permitidos, la duración del acuerdo y el procedimiento de revocación. La facilidad técnica de publicar datos no sustituye el contrato legal ni la minimización de datos.
+
+**Práctica de gobierno:** define cinco campos de documentación para una tabla Gold (`owner`, `clasificación`, `frecuencia`, `grano`, `SLA`) y describe cómo detectarías consumidores afectados por cambiar su esquema. Elabora una política de retención distinta para logs operativos, transacciones y datos agregados. Explica qué registrarías cuando una cuenta de servicio modifica permisos o publica una compartición externa.
 
 ---
 

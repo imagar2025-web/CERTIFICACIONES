@@ -1,7 +1,7 @@
 [🏠 Índice](../README.md) · [Siguiente →](../02-arquitectura-de-azure-databricks/README.md)
 
 > **Estado de estudio:** ✅ Visto · **Unidades oficiales:** 8 · [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/explore-azure-databricks/)  
-> **Versión de apuntes:** 14-11-2026 · Contenido técnico redactado de forma original a partir del itinerario de Microsoft.
+> **Versión de apuntes:** 15-11-2026 · Contenido técnico redactado de forma original a partir del itinerario de Microsoft.
 
 # 1. Explorar Azure Databricks
 
@@ -57,6 +57,56 @@ Crear un notebook que lea un pequeño dataset, filtre filas no válidas, agrupe 
 **Preguntas:** ¿qué diferencia hay entre lakehouse y warehouse? ¿Por qué importa la transaccionalidad de Delta? ¿Una tabla de Unity Catalog es el mismo objeto que un notebook? ¿En qué capa aplicarías limpieza de datos?
 
 ---
+
+---
+
+
+## Desarrollo en profundidad: del workspace a una tabla consultable
+
+### Comprender qué ocurre cuando ejecutas un notebook
+
+Un notebook de Azure Databricks no es simplemente un editor de Python conectado a una máquina virtual. Es una interfaz de ejecución que envía comandos a un contexto de cómputo capaz de ejecutar Spark y otros motores admitidos. La aplicación web conserva la organización del espacio de trabajo, las identidades y los controles administrativos; el cómputo realiza el trabajo y el almacenamiento persiste los datos. Esta separación explica por qué guardar un notebook no guarda automáticamente los resultados en una tabla, y por qué al terminar el cómputo sigues conservando el código y los datos persistidos pero puedes perder variables temporales y cachés.
+
+En Spark, el código del usuario se evalúa en un *driver* que planifica tareas y las distribuye entre *executors* cuando la operación es distribuida. Una instrucción como `spark.read.table(...)` crea un DataFrame lógico; muchas transformaciones se construyen de forma diferida y solo se ejecutan de verdad cuando se necesita materializar el resultado, por ejemplo en una escritura, un `count()` o una visualización. Este comportamiento —evaluación perezosa— es fundamental para interpretar tiempos de ejecución y evitar llamadas innecesarias a `collect()`.
+
+### Crear un flujo completo reproducible
+
+Como ejemplo didáctico independiente del laboratorio oficial, supongamos una fuente de ventas con identificador, cliente, fecha y total. Primero se establece explícitamente el esquema para evitar que cada ingestión infiera tipos diferentes. Después se escriben los registros válidos en una tabla Delta de Unity Catalog. Utiliza un catálogo y esquema de prácticas donde dispongas de permisos; los nombres siguientes son ilustrativos.
+
+```python
+from pyspark.sql import functions as F, types as T
+
+schema = T.StructType([
+    T.StructField("id_venta", T.LongType(), False),
+    T.StructField("cliente", T.StringType(), True),
+    T.StructField("fecha", T.StringType(), True),
+    T.StructField("importe", T.DoubleType(), True)
+])
+
+filas = [(1, "Ana", "2026-11-01", 42.5),
+         (2, "Luis", "2026-11-02", 18.0)]
+df = spark.createDataFrame(filas, schema)
+limpio = (df.withColumn("fecha", F.to_date("fecha"))
+            .filter(F.col("id_venta").isNotNull())
+            .filter(F.col("importe") >= 0))
+limpio.write.format("delta").mode("overwrite").saveAsTable("estudio.demo.ventas")
+```
+
+`mode("overwrite")` sustituye el contenido y **no** es la política adecuada para cualquier carga productiva: si el origen aporta solo cambios incrementales se necesita `MERGE`, `COPY INTO`, streaming o una estrategia de idempotencia. Para consultar los resultados desde SQL, ejecuta `SELECT * FROM estudio.demo.ventas;`. En Catalog Explorer podrás ver el objeto, columnas y permisos concedidos.
+
+### Workspaces, catálogos, esquemas y archivos
+
+No confundas una carpeta del workspace con un esquema de base de datos. Las carpetas del workspace organizan notebooks, consultas y recursos de colaboración. Unity Catalog organiza datos con identificadores de tres niveles, por ejemplo `catalogo.esquema.tabla`. Los volúmenes de Unity Catalog permiten almacenar y gobernar archivos no tabulares; no equivalen a tablas Delta. El directorio de código no debe actuar como ubicación improvisada de almacenamiento de datasets empresariales.
+
+### Actividad guiada y comprobaciones
+
+1. Abre el workspace y localiza la sección de cómputo, el explorador de catálogos y los notebooks.
+2. Comprueba qué identidades y permisos se requieren para crear un esquema y una tabla.
+3. Ejecuta primero la creación del DataFrame y comprueba `printSchema()` y `show()`.
+4. Escribe el resultado en una tabla de laboratorio y vuelve a consultar los datos desde otra sesión.
+5. Detén el cómputo y verifica qué persiste: el notebook y la tabla deben seguir existiendo, aunque la sesión ya no contenga las variables anteriores.
+
+**Errores frecuentes:** usar una ubicación de tabla que no existe; ejecutar sin permisos `USE CATALOG` o `USE SCHEMA`; confundir una tabla temporal registrada en la sesión con un objeto persistente; almacenar contraseñas en una celda; ejecutar `collect()` sobre un conjunto muy grande. El éxito del laboratorio no consiste solo en que una celda termine, sino en poder explicar qué recursos intervienen y qué datos quedan gobernados.
 
 ---
 
