@@ -1,11 +1,26 @@
-[🏠 Índice](../README.md) · [← Anterior](../10-limpieza-transformacion-y-carga/README.md) · [Siguiente →](../12-diseno-de-pipelines/README.md)
+# 11 · Gestionar restricciones de calidad
 
-> **Estado de estudio:** 🕒 Pendiente · **Unidades oficiales:** 8 · [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/implement-manage-data-quality-constraints-unity-catalog/)  
-> **Versión de apuntes:** 15-11-2026 · Contenido técnico redactado de forma original a partir del itinerario de Microsoft.
+[Índice DP-750](../README.md) · [← Limpiar, transformar y cargar datos](../10-limpieza-transformacion-y-carga/README.md) · [Diseñar e implementar pipelines →](../12-diseno-de-pipelines/README.md)
 
-# 11. Implementar y gestionar la calidad de datos en Azure Databricks
+**Progreso personal:** Pendiente de estudio. [Módulo oficial](https://learn.microsoft.com/en-us/training/modules/implement-manage-data-quality-constraints-unity-catalog/).
 
-## 11.1. Por qué la calidad es una responsabilidad del pipeline
+## Unidades
+
+1. [Introduction](#unidad-01)
+2. [Implement validation checks](#unidad-02)
+3. [Implement data type checks](#unidad-03)
+4. [Detect and manage schema drift](#unidad-04)
+5. [Manage data quality with pipeline expectations](#unidad-05)
+6. [Exercise - Implement and Manage Data Quality Constraints with Azure Databricks](#unidad-06)
+7. [Module assessment](#unidad-07)
+8. [Summary](#unidad-08)
+
+- [Desarrollo aplicado](#desarrollo-aplicado)
+- [Laboratorio y comprobaciones](#laboratorio-y-comprobaciones)
+
+## Unidad 01
+
+### Introduction
 
 Una carga puede terminar correctamente y producir una tabla inutilizable. **Calidad de datos** significa que los registros satisfacen los requisitos de negocio y los contratos técnicos: campos requeridos presentes, tipos correctos, valores en rangos plausibles, claves no duplicadas, coherencia temporal y referencia a entidades válidas. No equivale a simplemente convertir errores a `NULL` o a aceptar cualquier fichero nuevo.
 
@@ -13,7 +28,11 @@ Hay cuatro puntos donde detectar incidencias: **ingesta** (formato y parseo), **
 
 Una buena estrategia define tres posibles decisiones ante un error: **registrar y mantener** si la alerta es tolerable; **descartar o aislar** los registros problemáticos cuando el resto es utilizable; o **detener la ejecución** si la invalidez compromete todo el producto de datos. La elección depende del SLA, no de un comportamiento arbitrario de la librería.
 
-## 11.2. Comprobaciones de nulabilidad, cardinalidad y rango
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/implement-manage-data-quality-constraints-unity-catalog/1-introduction)
+
+## Unidad 02
+
+### Implement validation checks
 
 **Nulabilidad.** Un `NULL` representa ausencia de valor, pero puede ser normal en un campo opcional. En los identificadores de negocio, importes o fechas de carga puede impedir una operación esencial. La definición del modelo debe indicar qué columnas admiten nulos y cómo se controla ese requisito.
 
@@ -32,7 +51,11 @@ FROM insurance_lab.bronze.claims_raw;
 
 *Consulta didáctica:* si `claim_amount` llega como texto, convierte primero con una función tolerante como `try_cast(claim_amount AS DECIMAL(12,2))` y verifica los fallos, sin suponer que la tabla original ya tiene un campo numérico.
 
-## 11.3. Comprobación de tipos: esquema físico frente a significado
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/implement-manage-data-quality-constraints-unity-catalog/2-implement-validation-checks)
+
+## Unidad 03
+
+### Implement data type checks
 
 El tipo `STRING` acepta casi cualquier representación, pero no garantiza que un campo denominado fecha o precio pueda operarse correctamente. `DECIMAL(12,2)` representa importes decimales con precisión fija, mientras que `DOUBLE` favorece cálculos numéricos aproximados. Para timestamps, define zona horaria y formato de origen, especialmente si provienen de países diferentes.
 
@@ -48,7 +71,11 @@ FROM insurance_lab.bronze.claims_raw;
 
 El resultado es un conjunto de columnas tipadas, pero no una corrección automática de los datos: hay que tratar los valores nulos derivados de errores de parseo y distinguirlos de los nulos originales.
 
-## 11.4. Schema enforcement y schema drift
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/implement-manage-data-quality-constraints-unity-catalog/3-implement-data-type-checks)
+
+## Unidad 04
+
+### Detect and manage schema drift
 
 **Schema enforcement** es impedir que datos con forma incompatible entren en una tabla gobernada sin una decisión explícita. **Schema drift** describe cambios en la estructura de las fuentes a lo largo del tiempo: nuevas columnas, columnas ausentes, cambios de tipo, nombres renombrados o nuevas estructuras anidadas. No todos son peligrosos; lo crítico es que el sistema los haga visibles.
 
@@ -56,7 +83,17 @@ Delta Lake proporciona aplicación del esquema en escrituras y mecanismos contro
 
 **Rescued data** no equivale a descartar. El contenido inesperado puede guardarse en una columna como `_rescued_data` para analizarlo posteriormente, conservando trazabilidad. Un cambio de origen debe revisarse antes de convertirlo silenciosamente en una característica del modelo Silver.
 
-## 11.5. Expectations en Lakeflow Spark Declarative Pipelines
+#### Schema drift y cuarentena
+
+Añadir una columna nueva es un cambio de contrato distinto de cambiar el tipo de una columna existente. Auto Loader permite gestionar información rescatada para inspeccionar valores o campos que la lectura no pudo encajar. Guarda el contenido rescatado junto con identificación del fichero y fecha de ingesta. Con ese punto de partida el responsable puede decidir cómo evolucionar Silver. Define el comportamiento ante cambios compatibles y no compatibles y prueba qué ocurre después de reintentar la carga con el mismo checkpoint.
+
+Una expectativa declarativa con política de descarte elimina filas del resultado del dataset. Para conservar sus datos en cuarentena, diseña una rama explícita que seleccione las filas inválidas y las persista con el motivo correspondiente. Conserva también las métricas de volumen para reconciliar flujo válido e inválido. Si faltan filas, revisa primero la política aplicada en cada dataset y comprueba que los recuentos se comparan en el mismo punto del pipeline.
+
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/implement-manage-data-quality-constraints-unity-catalog/4-detect-manage-schema-drift)
+
+## Unidad 05
+
+### Manage data quality with pipeline expectations
 
 Una **expectation** asocia un nombre a una condición verificable sobre los registros. En Lakeflow pueden definirse reglas en Python y escoger una acción en caso de incumplimiento. La sintaxis habitual utiliza decoradores del paquete `pyspark.pipelines` importado como `dp` cuando el runtime lo admite.
 
@@ -78,23 +115,51 @@ def claims_validated():
 
 Este fragmento es **ilustrativo**. No reemplaza el pipeline completo oficial, que contiene reglas de tipado y más expectativas. Debes revisar el soporte para funciones y tipos de entrada de tu versión de Databricks.
 
-## 11.6. Monitorización y tratamiento operativo
+#### Decidir qué pasa con las filas inválidas
 
-La calidad debe poder responder: ¿cuántas filas entraron?, ¿cuántas no superaron una comprobación?, ¿qué error creció con respecto a ayer?, ¿se produjo una modificación inesperada de esquema? El grafo del pipeline, las métricas asociadas a expectations y el event log aportan evidencias. Un incremento de errores de parseo tras un despliegue puede indicar un cambio del contrato de origen.
+Una regla que informa sin filtrar es útil durante el arranque de un pipeline, cuando todavía estás midiendo cuántos productores incumplen el contrato. La política de descarte se ajusta a datasets de consumo cuando existe una regla explícita para excluir esos registros y no es posible repararlos a tiempo. Para una condición que invalida información contable que debe publicarse completa, configura el fallo y prepara una ruta de reparación. Los resultados de la prueba deben mostrar qué filas llegaron al dataset y qué impacto tiene cada violación en la actualización. En un fallo, conserva evidencia de la ejecución y mide fallos y rechazos en fuentes de observabilidad apropiadas.
 
-Define umbrales de alerta que no se conviertan en ruido, responsable de la incidencia, tratamiento de registros en cuarentena y procedimiento para recuperar o reprocesar datos. Las reglas de negocio, por ejemplo la prohibición de importes negativos, deberían tener pruebas de regresión.
+```sql
+CREATE OR REFRESH STREAMING TABLE silver_reclamaciones (
+  CONSTRAINT id_presente EXPECT (reclamacion_id IS NOT NULL)
+    ON VIOLATION DROP ROW
+)
+AS SELECT reclamacion_id, importe
+FROM STREAM bronze_reclamaciones;
+```
 
-## 11.7. Repaso razonado
+Este ejemplo complementario presupone una streaming table Bronze en el namespace del pipeline. Introduce una fila con identificador y otra sin él. La válida debe estar en Silver. La inválida debe quedar fuera. Comprueba que la métrica de calidad refleja el descarte y que la fila original sigue disponible en Bronze para investigación.
+
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/implement-manage-data-quality-constraints-unity-catalog/5-manage-data-quality-pipeline-expectations)
+
+## Unidad 06
+
+### Exercise - Implement and Manage Data Quality Constraints with Azure Databricks
+
+La actividad de esta unidad se desarrolla en [Laboratorio y comprobaciones](#laboratorio-y-comprobaciones), con requisitos, secuencia de trabajo y criterios para revisar el resultado.
+
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/implement-manage-data-quality-constraints-unity-catalog/6-exercise-implement-manage-data-quality-constraints-unity-catalog)
+
+## Unidad 07
+
+### Module assessment
 
 1. **¿Qué diferencia hay entre schema drift y datos erróneos?** El drift modifica la estructura; un dato erróneo puede respetar el esquema y aun así violar el dominio.
 2. **¿Cuándo escogerías FAIL en lugar de DROP?** Si continuar genera resultados empresarialmente inseguros o inconsistentes.
 3. **¿Por qué se inspecciona `_rescued_data`?** Porque contiene campos no reconocidos o incompatibles que requieren una decisión de modelado.
 4. **¿Un cast de texto a decimal garantiza importes válidos?** No: puede fallar, y aun convertido el importe puede estar fuera del rango esperado.
 
----
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/implement-manage-data-quality-constraints-unity-catalog/7-knowledge-check)
 
+## Unidad 08
 
-## Desarrollo en profundidad: diseñar contratos verificables de calidad
+### Summary
+
+Las reglas de calidad deben especificar condición, punto de aplicación y reacción. Valida esquema antes de interpretar significado. Aísla datos recuperables para inspección y distingue el volumen rechazado de un problema operativo que exige parar la publicación. En un pipeline, archiva métricas por ejecución y fija umbrales con el responsable de los datos. Para comprobar una expectativa aporta casos que se sabe que pasan y casos que incumplen específicamente una regla.
+
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/implement-manage-data-quality-constraints-unity-catalog/8-summary)
+
+## Desarrollo aplicado
 
 ### Calidad es una propiedad medible
 
@@ -129,9 +194,7 @@ Mide tanto el número absoluto de errores como su porcentaje. Diez filas incorre
 
 **Laboratorio de calidad:** construye diez filas con dos importes negativos, un identificador nulo, una fecha inválida y un registro duplicado. Define el grano y clasifica las incidencias. Carga válidos y rechazados en tablas distintas, añade métricas por motivo y simula un cambio de esquema en el origen. En cada paso explica si el proceso continúa, omite registros o se detiene; la decisión debe obedecer a una política documentada.
 
----
-
-## 🧪 Guía de laboratorio y comprobación práctica
+## Laboratorio y comprobaciones
 
 **Ejercicio oficial:** [Abrir las instrucciones de MicrosoftLearning](https://microsoftlearning.github.io/DP-750T00-Implement-Data-Engineering-Solutions-using-Azure-Databricks/Instructions/Labs/09-implement-manage-data-quality-constraints-unity-catalog.html)  
 **Notebook oficial:** [Importar o consultar notebook `.ipynb`](https://raw.githubusercontent.com/MicrosoftLearning/DP-750T00-Implement-Data-Engineering-Solutions-using-Azure-Databricks/refs/heads/main/Allfiles/09-implement-manage-data-quality-constraints-unity-catalog.ipynb)  
@@ -157,13 +220,33 @@ Mide tanto el número absoluto de errores como su porcentaje. Diez filas incorre
 
 **Atención:** un `expect_or_fail` sobre un registro de prueba inválido puede interrumpir intencionadamente la ejecución. Es un resultado de aprendizaje que debes diagnosticar, no silenciar cambiando a WARN sin comprender el requisito.
 
+### Prueba complementaria con datos sintéticos
 
----
+En una tabla de pruebas, el siguiente control sirve para diseñar las filas de entrada antes de trasladar reglas al pipeline oficial. Ejecuta primero el SQL y comprueba que cada fila falla por la causa prevista.
 
-### 📚 Fuentes y navegación
+```sql
+WITH entradas(id, importe_txt) AS (
+  SELECT * FROM VALUES (1, '15.40'), (2, '-3.10'), (3, 'N/D')
+),
+tipadas AS (
+  SELECT id, importe_txt, try_cast(importe_txt AS DECIMAL(12,2)) AS importe
+  FROM entradas
+)
+SELECT id, importe_txt, importe,
+  CASE
+    WHEN importe IS NULL THEN 'importe_invalido'
+    WHEN importe < 0 THEN 'importe_negativo'
+    ELSE 'valido'
+  END AS resultado
+FROM tipadas
+ORDER BY id;
+```
 
-- [Contenido oficial de Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/implement-manage-data-quality-constraints-unity-catalog/)
-- [Repositorio docente de laboratorios DP-750T00](https://microsoftlearning.github.io/DP-750T00-Implement-Data-Engineering-Solutions-using-Azure-Databricks/)
-- [Guía oficial de competencias del examen DP-750](https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/dp-750)
+El esperado es una fila válida y dos rechazables por reglas distintas. `TRY_CAST` convierte los valores incompatibles en nulos en este ejemplo. Decide si un valor ausente se trata igual que una cadena malformada. Si tienen implicaciones diferentes, expresa las reglas en orden y separa las métricas por motivo.
 
-[🏠 Índice](../README.md) · [← Anterior](../10-limpieza-transformacion-y-carga/README.md) · [Siguiente →](../12-diseno-de-pipelines/README.md)
+## Fuentes y navegación
+
+- [Fuentes de la certificación](../FUENTES.md)
+- [Preparación y limpieza del entorno](../PREPARACION-LABORATORIOS.md)
+
+[Índice DP-750](../README.md) · [← Limpiar, transformar y cargar datos](../10-limpieza-transformacion-y-carga/README.md) · [Diseñar e implementar pipelines →](../12-diseno-de-pipelines/README.md)

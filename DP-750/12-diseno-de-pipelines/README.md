@@ -1,11 +1,28 @@
-[🏠 Índice](../README.md) · [← Anterior](../11-calidad-de-datos/README.md) · [Siguiente →](../13-implementacion-lakeflow-jobs/README.md)
+# 12 · Diseñar e implementar pipelines
 
-> **Estado de estudio:** 🕒 Pendiente · **Unidades oficiales:** 10 · [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/design-implement-data-pipelines/)  
-> **Versión de apuntes:** 15-11-2026 · Contenido técnico redactado de forma original a partir del itinerario de Microsoft.
+[Índice DP-750](../README.md) · [← Gestionar restricciones de calidad](../11-calidad-de-datos/README.md) · [Implementar Lakeflow Jobs →](../13-lakeflow-jobs/README.md)
 
-# 12. Diseño e implementación de canalizaciones de datos
+**Progreso personal:** Pendiente de estudio. [Módulo oficial](https://learn.microsoft.com/en-us/training/modules/design-implement-data-pipelines/).
 
-## 12.1. De tareas sueltas a un proceso reproducible
+## Unidades
+
+1. [Introduction](#unidad-01)
+2. [Design order of operations for a pipeline](#unidad-02)
+3. [Choose notebook vs Lakeflow Pipelines](#unidad-03)
+4. [Design Lakeflow job logic](#unidad-04)
+5. [Design error handling in pipelines and jobs](#unidad-05)
+6. [Create pipeline with notebook](#unidad-06)
+7. [Create pipeline with Lakeflow pipelines](#unidad-07)
+8. [Exercise - Design and Implement Data Pipelines with Azure Databricks](#unidad-08)
+9. [Module assessment](#unidad-09)
+10. [Summary](#unidad-10)
+
+- [Desarrollo aplicado](#desarrollo-aplicado)
+- [Laboratorio y comprobaciones](#laboratorio-y-comprobaciones)
+
+## Unidad 01
+
+### Introduction
 
 Un **pipeline** transforma una entrada en un producto de datos mediante operaciones relacionadas. Frente a ejecutar un notebook manual, un pipeline productivo especifica fuentes, transformaciones, destino, dependencias, validaciones, errores, estado y condiciones de reejecución. **Orquestar** es decidir qué tarea se ejecuta, cuándo y en qué secuencia; **procesar** es ejecutar sus cálculos y escrituras.
 
@@ -21,13 +38,21 @@ flowchart LR
   E --> F[Dashboards y consumidores]
 ```
 
-## 12.2. Determinar el orden de las operaciones
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/design-implement-data-pipelines/1-introduction)
+
+## Unidad 02
+
+### Design order of operations for a pipeline
 
 Un orden razonable: **identificación de fuentes → ingesta → comprobaciones de estructura → limpieza → enriquecimiento → agregación → publicación → controles posteriores**. El orden se ajusta al caso: por ejemplo, el filtrado temprano reduce costes, pero eliminar filas antes de registrarlas puede destruir rastros necesarios para auditoría.
 
 Las dependencias son un **grafo acíclico dirigido (DAG)**: una tarea comienza cuando sus predecesoras satisfacen una condición de éxito o de finalización. Hay tareas estrictamente secuenciales y otras que pueden ejecutarse en paralelo. Un DAG explícito reduce las carreras entre escritores y consumidores.
 
-## 12.3. Notebooks frente a Lakeflow Declarative Pipelines
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/design-implement-data-pipelines/2-design-order-operations-pipeline)
+
+## Unidad 03
+
+### Choose notebook vs Lakeflow Pipelines
 
 **Notebooks** proporcionan control imperativo en Python/SQL, útiles para prototipos y transformaciones específicas. Pueden ejecutarse como tareas de Lakeflow Jobs y requieren que el autor controle dependencias, idempotencia y gestión de errores. **Lakeflow Spark Declarative Pipelines** permite declarar datasets, flujos y restricciones de calidad; el motor organiza actualizaciones y parte de la lógica operativa.
 
@@ -40,7 +65,11 @@ Las dependencias son un **grafo acíclico dirigido (DAG)**: una tarea comienza c
 
 Se pueden combinar: una canalización declarativa produce tablas Silver y un Job ejecuta controles o tareas posteriores. No confundas el recurso **Jobs** con el recurso **Pipelines**, aunque aparezcan en el mismo menú.
 
-## 12.4. Diseño de Lakeflow Jobs y dependencias
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/design-implement-data-pipelines/3-choose-notebook-lakeflow-pipelines)
+
+## Unidad 04
+
+### Design Lakeflow job logic
 
 Un job contiene tareas, cada una con identidad, tipo, recurso de cómputo, parámetros y políticas de reintento. Algunas tareas son notebooks, otras SQL, ejecución de pipeline, condición If/else u operaciones de otra naturaleza compatible. El orquestador calcula qué puede iniciar a partir de `depends_on` y las reglas de ejecución tras las dependencias.
 
@@ -54,7 +83,11 @@ bronze → silver ─┤
 
 En el laboratorio de Microsoft aparece `dbutils.widgets` para parámetros y `dbutils.jobs.taskValues` para comunicar valores entre tareas. El tipo de dato, el alcance y la existencia del valor deben controlarse: no conviene confiar en que cualquier salida del notebook estará disponible para cualquier tarea descendente.
 
-## 12.5. Errores, reintentos y operaciones seguras
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/design-implement-data-pipelines/4-design-task-logic-lakeflow-job)
+
+## Unidad 05
+
+### Design error handling in pipelines and jobs
 
 Los fallos pueden ser **transitorios** (red, latencia de almacenamiento, servicio temporalmente indisponible), **deterministas** (código incorrecto, esquema incompatible) o **de negocio** (datos inadmisibles). Los transitorios a menudo justifican reintentos con espera. Los deterministas no se arreglan repitiendo el mismo código. Los de negocio requieren una política de calidad.
 
@@ -62,23 +95,82 @@ Un bloque `try/except` puede registrar contexto y volver a propagar la excepció
 
 Los reintentos deben ser **idempotentes**: ejecutar de nuevo no debe crear facturas o filas duplicadas. Se puede conseguir mediante `MERGE` por clave, staging temporal, operaciones de reemplazo controlado o marcas de lote. `append` puro no es idempotente salvo que la lógica de origen ya garantice unicidad.
 
-## 12.6. Control de costes, trazabilidad y ejecución
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/design-implement-data-pipelines/5-design-error-handling-pipelines)
 
-Selecciona el tipo de cómputo conforme al SLA y la carga. Evita mantener recursos interactivos activos para jobs pequeños programados. Etiqueta los trabajos, establece un propietario y conserva un identificador de ejecución para correlacionar logs, métricas y resultados.
+## Unidad 06
 
-Documenta el contrato de cada etapa: entradas, columnas requeridas, reglas de salida, actualizaciones permitidas, frecuencia, destino de errores y retención. Cuando una dependencia cambia, el consumidor debe detectarlo antes de generar métricas incorrectas.
+### Create pipeline with notebook
 
-## 12.7. Repaso razonado
+#### Implementación con notebooks y dependencias explícitas
+
+Divide la carga en notebooks cuando necesites que cada fase tenga su propia configuración, reintentos o resultados observables. Configura una tarea para Bronze que recibe `run_date`, otra para Silver que depende de Bronze y otra para Gold que depende de Silver. El parámetro representa el lote lógico. Reejecutar con la misma fecha debe leer el mismo conjunto de origen o una versión registrada. Para saber si el intento anterior ya publicó filas, guarda el estado de negocio en tablas Delta o en un registro de lotes. El estado de una tarea en el DAG describe la orquestación y no sustituye esa evidencia en el destino.
+
+```python
+from datetime import date
+
+dbutils.widgets.text("run_date", "")
+run_date = date.fromisoformat(dbutils.widgets.get("run_date"))
+print(f"Procesando el lote {run_date.isoformat()}")
+```
+
+El notebook debe fallar si la fecha falta o tiene formato incorrecto. Haz que las dependencias de éxito bloqueen Gold cuando Silver no pueda publicar. Si quieres enviar una notificación o registrar el error, configura una tarea que se ejecute bajo la condición de fallo apropiada y conserve el estado original de la carga.
+
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/design-implement-data-pipelines/6-create-pipeline-notebook-precedence)
+
+## Unidad 07
+
+### Create pipeline with Lakeflow pipelines
+
+#### Implementación declarativa
+
+En Lakeflow Spark Declarative Pipelines se describen datasets y sus dependencias. El motor ordena su actualización a partir de las referencias, gestiona el estado requerido por cada tipo de dataset y publica en el catálogo y esquema configurados. Una streaming table conserva semántica incremental y encaja en ingestión con eventos o archivos nuevos. Una materialized view presenta un resultado derivado cuyo coste y modalidad de refresco dependen de la consulta y de lo que puede resolver incrementalmente el motor.
+
+```sql
+CREATE OR REFRESH STREAMING TABLE bronze_eventos
+AS SELECT *
+FROM STREAM read_files(
+  '/Volumes/estudio/raw/entrada/eventos',
+  format => 'json'
+);
+
+CREATE OR REFRESH MATERIALIZED VIEW gold_eventos_por_tipo
+AS SELECT tipo, count(*) AS total
+FROM bronze_eventos
+GROUP BY tipo;
+```
+
+Este ejemplo es código fuente de un pipeline y presupone que los JSON tienen una columna `tipo`. Configura el pipeline con el catálogo y esquema de pruebas y el principal con acceso al volumen. En la primera actualización comprueba que existe una arista desde Bronze a Gold. Añade un archivo con un evento conocido y confirma la variación esperada tras la siguiente actualización. Inspecciona el grafo y las métricas antes de programar actualizaciones mediante Lakeflow Jobs.
+
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/design-implement-data-pipelines/7-create-pipeline-lakeflow-declarative)
+
+## Unidad 08
+
+### Exercise - Design and Implement Data Pipelines with Azure Databricks
+
+La actividad de esta unidad se desarrolla en [Laboratorio y comprobaciones](#laboratorio-y-comprobaciones), con requisitos, secuencia de trabajo y criterios para revisar el resultado.
+
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/design-implement-data-pipelines/8-exercise-design-implement-data-pipelines)
+
+## Unidad 09
+
+### Module assessment
 
 1. **¿Qué diferencia hay entre un notebook y un job?** El primero contiene código y análisis; el segundo configura cómo se ejecutan tareas de forma orquestada.
 2. **¿Por qué no conviene tratar siempre los fallos con retry?** Un error determinista persistirá y solo encarecerá la carga.
 3. **¿Qué previene una clave de lote e idempotencia?** Duplicaciones al reejecutar una etapa.
 4. **¿Por qué medir los rechazados en Silver?** Para saber si Gold se calculó sobre un subconjunto fiable o una muestra sesgada.
 
----
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/design-implement-data-pipelines/9-knowledge-check)
 
+## Unidad 10
 
-## Desarrollo en profundidad: construir un pipeline que se pueda operar
+### Summary
+
+Elige la unidad de recuperación antes de programar el flujo. En una implementación por tareas, define qué entrada se reprocesa si falla cada fase. En un pipeline declarativo, comprueba sus fuentes, tipos de dataset y las consecuencias de un refresco completo. En ambos diseña para detectar la última publicación válida, identificar los datos del lote y reparar sin duplicar efectos downstream.
+
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/design-implement-data-pipelines/10-summary)
+
+## Desarrollo aplicado
 
 ### Un pipeline es un contrato de dependencias
 
@@ -112,9 +204,7 @@ Define fallos transitorios (limitación de recursos, red), fallos de datos (esqu
 
 **Ejercicio de diseño:** crea un DAG para la carga diaria de ventas y la actualización de una dimensión SCD2. La publicación de Gold no debe comenzar hasta completar Silver y sus controles. Propón qué tareas pueden ejecutarse en paralelo y qué ocurre si falla solo un producto de datos. Prepara una tabla de escenarios con un fallo en la extracción, otro en validación y otro al escribir Gold; indica si se reintenta, se repara o se aborta.
 
----
-
-## 🧪 Guía de laboratorio y comprobación práctica
+## Laboratorio y comprobaciones
 
 **Ejercicio oficial:** [Abrir las instrucciones de MicrosoftLearning](https://microsoftlearning.github.io/DP-750T00-Implement-Data-Engineering-Solutions-using-Azure-Databricks/Instructions/Labs/10-design-implement-data-pipelines.html)  
 **Notebook oficial:** [Importar o consultar notebook `.ipynb`](https://raw.githubusercontent.com/MicrosoftLearning/DP-750T00-Implement-Data-Engineering-Solutions-using-Azure-Databricks/refs/heads/main/Allfiles/10-design-implement-data-pipelines.ipynb)  
@@ -143,13 +233,13 @@ Define fallos transitorios (limitación de recursos, red), fallos de datos (esqu
 
 **Verificación:** observa dependencias, estado de tareas, reintentos y parámetros; explica por qué un try/except dentro del notebook resuelve errores de negocio distintos a los reintentos de fallos transitorios del orquestador.
 
+### Validación del DAG en el laboratorio
 
----
+Primero haz una ejecución con Bronze, Silver y Gold correctos y guarda sus recuentos. Después provoca un fallo controlado en una tarea Silver sobre datos de prácticas. Comprueba que Gold queda bloqueado por su condición de ejecución. Si has definido una rama de error, confirma que se ejecuta y registra el identificador de la carga. Corrige Silver y valida si puedes reparar la ejecución sin volver a ejecutar Bronze. La salida Gold debe registrar la misma fecha lógica y un único resultado por clave prevista. Si aparecen duplicados tras la reparación, revisa append frente a merge y cómo se calcula la entrada del lote.
 
-### 📚 Fuentes y navegación
+## Fuentes y navegación
 
-- [Contenido oficial de Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/design-implement-data-pipelines/)
-- [Repositorio docente de laboratorios DP-750T00](https://microsoftlearning.github.io/DP-750T00-Implement-Data-Engineering-Solutions-using-Azure-Databricks/)
-- [Guía oficial de competencias del examen DP-750](https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/dp-750)
+- [Fuentes de la certificación](../FUENTES.md)
+- [Preparación y limpieza del entorno](../PREPARACION-LABORATORIOS.md)
 
-[🏠 Índice](../README.md) · [← Anterior](../11-calidad-de-datos/README.md) · [Siguiente →](../13-implementacion-lakeflow-jobs/README.md)
+[Índice DP-750](../README.md) · [← Gestionar restricciones de calidad](../11-calidad-de-datos/README.md) · [Implementar Lakeflow Jobs →](../13-lakeflow-jobs/README.md)

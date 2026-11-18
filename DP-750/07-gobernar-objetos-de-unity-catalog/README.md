@@ -1,17 +1,36 @@
-[🏠 Índice](../README.md) · [← Anterior](../06-proteger-objetos-de-unity-catalog/README.md) · [Siguiente →](../08-modelado-de-datos/README.md)
+# 07 · Gobernar objetos de Unity Catalog
 
-> **Estado de estudio:** ✅ Visto · **Unidades oficiales:** 10 · [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/govern-unity-catalog-objects/)  
-> **Versión de apuntes:** 15-11-2026 · Contenido técnico redactado de forma original a partir del itinerario de Microsoft.
+[Índice DP-750](../README.md) · [← Proteger objetos de Unity Catalog](../06-proteger-objetos-de-unity-catalog/README.md) · [Diseñar e implementar el modelado de datos →](../08-modelado-de-datos/README.md)
 
-# 7. Gobernar objetos de Unity Catalog
+**Progreso personal:** Estudiado. [Módulo oficial](https://learn.microsoft.com/en-us/training/modules/govern-unity-catalog-objects/).
 
-**Referencia Microsoft Learn:** [Gobernar objetos de Unity Catalog](https://learn.microsoft.com/en-us/training/modules/govern-unity-catalog-objects/) · **10 unidades oficiales**.
+## Unidades
 
-## 7.1. Gobierno: más que permisos
+1. [Introduction](#unidad-01)
+2. [Create and preserve table definitions](#unidad-02)
+3. [Configure ABAC with tags and policies](#unidad-03)
+4. [Apply data retention policies](#unidad-04)
+5. [Set up and manage data lineage](#unidad-05)
+6. [Configure audit logging](#unidad-06)
+7. [Design secure OpenSharing strategy](#unidad-07)
+8. [Exercise - Govern Unity Catalog Objects](#unidad-08)
+9. [Module assessment](#unidad-09)
+10. [Summary](#unidad-10)
+
+- [Desarrollo aplicado](#desarrollo-aplicado)
+- [Laboratorio y comprobaciones](#laboratorio-y-comprobaciones)
+
+## Unidad 01
+
+### Introduction
 
 Gobernar datos es mantenerlos **descubribles, comprensibles, seguros, auditables y reutilizables**. Una tabla puede ser accesible técnicamente y aun así tener escaso valor si nadie sabe qué significa cada columna, de dónde viene un importe o quién debe aprobar cambios en su esquema.
 
-## 7.2. Definiciones y metadatos
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/govern-unity-catalog-objects/1-introduction)
+
+## Unidad 02
+
+### Create and preserve table definitions
 
 Documentar significa explicar granularidad, campos, unidades de medida, propietario funcional, frescura y reglas de calidad. Los comentarios de catálogo, esquema, tabla y columna se convierten en metadatos accesibles para analistas y herramientas automatizadas.
 
@@ -25,13 +44,21 @@ ALTER COLUMN importe COMMENT 'Importe del pedido en EUR';
 
 Una definición como «ingresos» sin concretar devoluciones, impuestos o descuentos puede dar lugar a informes incoherentes incluso con un pipeline perfecto.
 
-## 7.3. ABAC: Attribute-Based Access Control
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/govern-unity-catalog-objects/2-preserve-table-column-definitions)
+
+## Unidad 03
+
+### Configure ABAC with tags and policies
 
 El **RBAC** concede derechos según roles o grupos. El **ABAC** toma decisiones usando atributos de datos y políticas, por ejemplo etiquetas de clasificación. Las **governed tags** contribuyen a describir de modo normalizado información como sensibilidad y dominio; las políticas ABAC compatibles pueden aplicar controles de fila o máscara en función de esas etiquetas y reglas.
 
 Ejemplo: una columna con una etiqueta de dato personal debe tratarse con una política de protección; la etiqueta por sí sola **no equivale** a una prohibición de lectura. Hay que configurar la política y verificar su alcance.
 
-## 7.4. Retención de datos
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/govern-unity-catalog-objects/3-configure-attribute-based-access-control-tags-policies)
+
+## Unidad 04
+
+### Apply data retention policies
 
 La retención cumple objetivos diferentes: cumplimiento, recuperación, auditoría y coste. En tablas Delta, el historial de versiones está relacionado con el registro de transacciones y la conservación de archivos. **Time travel no es un archivo histórico permanente garantizado.** Las operaciones de mantenimiento y la política de retención pueden eliminar archivos antiguos necesarios para reconstruir versiones.
 
@@ -44,7 +71,23 @@ SELECT * FROM estudio.ventas.pedidos VERSION AS OF 3;
 
 Para analizar décadas de cambios de perfiles o estados, conviene diseñar una tabla histórica explícita (por ejemplo SCD Tipo 2) además de usar time travel operacional. Ajustar cualquier retención exige comprobar requisitos de streaming, operaciones concurrentes, gobierno y recuperación.
 
-## 7.5. Linaje de datos
+#### Retención y recuperación
+
+Una operación lógica de borrado cambia el snapshot vigente. Los archivos de snapshots anteriores pueden seguir presentes mientras sean necesarios según la retención. Para una operación controlada de mantenimiento, revisa primero las propiedades de retención y el intervalo máximo de las lecturas, escrituras y consumidores que dependan de versiones anteriores. `VACUUM` actúa sobre archivos obsoletos y puede volver inaccesible un snapshot antiguo. `DESCRIBE HISTORY` puede seguir mostrando el commit aunque los archivos que necesitaría time travel ya no existan.
+
+```sql
+SHOW TBLPROPERTIES estudio.privacidad.eventos;
+DESCRIBE HISTORY estudio.privacidad.eventos;
+VACUUM estudio.privacidad.eventos DRY RUN;
+```
+
+El modo `DRY RUN` permite inspeccionar candidatos sin borrarlos. Para una solicitud de eliminación de datos, revisa también copias, destinos derivados y políticas de respaldo. La retención de una tabla afecta a ese objeto. Un histórico de negocio o un registro de auditoría requieren su propia definición de conservación.
+
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/govern-unity-catalog-objects/4-apply-data-retention-policies)
+
+## Unidad 05
+
+### Set up and manage data lineage
 
 El **lineage** describe dependencias: tablas de origen, procesos transformadores y objetos de destino. A nivel de tabla indica qué datasets alimentan a otros; a nivel de columna ayuda a explicar de qué campos resulta una métrica. Resulta útil para análisis de impacto (¿qué informes se rompen si cambio esta columna?), auditorías y depuración.
 
@@ -56,28 +99,53 @@ web.eventos ──┘
 
 El linaje registrado depende de los mecanismos y operaciones reconocidos por la plataforma: no debe asumirse que toda transformación en cualquier herramienta externa se captura automáticamente.
 
-## 7.6. Audit logging
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/govern-unity-catalog-objects/5-manage-data-lineage-tracking)
+
+## Unidad 06
+
+### Configure audit logging
 
 Los registros de auditoría ayudan a responder **quién** accedió, **qué** operación realizó, **cuándo**, desde **dónde** y con qué resultado. Se utilizan en respuesta a incidentes y controles de cumplimiento. Las tablas de sistema y los mecanismos de entrega de logs ofrecen información según configuración, disponibilidad y retención del entorno.
 
 Una auditoría eficaz también exige conservar registros de forma segura, limitar su acceso y evitar almacenar secretos en los propios logs.
 
-## 7.7. Compartir datos: OpenSharing / Delta Sharing
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/govern-unity-catalog-objects/6-configure-audit-logging)
+
+## Unidad 07
+
+### Design secure OpenSharing strategy
 
 El intercambio seguro de datos permite proporcionar conjuntos de datos a destinatarios fuera de un mismo workspace sin exportaciones manuales constantes. **Delta Sharing** se utiliza para compartir datos de manera controlada, con objetos como shares, recipients y permisos. En el temario se introduce la denominación **OpenSharing** para la estrategia de intercambio abierto.
 
 Elegir una estrategia requiere conocer el destinatario, credenciales, revocación, formatos admitidos, posibles restricciones de filtros y residencia de los datos. Compartir una tabla no debe interpretarse como conceder acceso al metastore entero.
 
-## 7.8. Laboratorio y repaso
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/govern-unity-catalog-objects/7-secure-open-sharing-strategy)
+
+## Unidad 08
+
+### Exercise - Govern Unity Catalog Objects
 
 Documenta una tabla con su propietario, granularidad y clasificación. Diseña una política que proteja atributos personales, un procedimiento para revisar linaje antes de renombrar una columna y una retención adecuada para auditoría. Explica por qué las versiones Delta antiguas no son sustituto automático de una tabla histórica de clientes.
 
----
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/govern-unity-catalog-objects/8-exercise-govern-unity-catalog-objects)
 
----
+## Unidad 09
 
+### Module assessment
 
-## Desarrollo en profundidad: gobernar el ciclo de vida del dato
+Un usuario pregunta quién leyó una tabla y qué pipeline la alimenta. El *audit log* aporta hechos sobre acciones y actores. El linaje representa dependencias entre objetos, sujeto a los requisitos de captura de la plataforma. `DESCRIBE HISTORY` examina commits de una tabla Delta. Los tres responden preguntas diferentes. Si necesita compartir la tabla fuera del workspace, identifica el destinatario, protocolo de acceso y activos expuestos antes de publicar el share.
+
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/govern-unity-catalog-objects/9-knowledge-check)
+
+## Unidad 10
+
+### Summary
+
+El mantenimiento de una tabla gobernada combina definiciones semánticas, permisos extendidos por atributos, retención física y observabilidad. Para evaluar una política por tags comprueba quién puede asignarlos y qué herencia se aplica. Para evaluar la retención comprueba el horizonte que necesita la operación para recuperar datos y el que exige la organización para auditoría. Conserva los registros de auditoría en un destino y con una política que cubra ese horizonte.
+
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/govern-unity-catalog-objects/10-summary)
+
+## Desarrollo aplicado
 
 ### Gobierno no es únicamente permisos
 
@@ -103,9 +171,7 @@ Los registros de auditoría sirven para investigar operaciones y cambios relevan
 
 **Práctica de gobierno:** define cinco campos de documentación para una tabla Gold (`owner`, `clasificación`, `frecuencia`, `grano`, `SLA`) y describe cómo detectarías consumidores afectados por cambiar su esquema. Elabora una política de retención distinta para logs operativos, transacciones y datos agregados. Explica qué registrarías cuando una cuenta de servicio modifica permisos o publica una compartición externa.
 
----
-
-## 🧪 Guía de laboratorio y comprobación práctica
+## Laboratorio y comprobaciones
 
 **Ejercicio oficial:** [Abrir las instrucciones de MicrosoftLearning](https://microsoftlearning.github.io/DP-750T00-Implement-Data-Engineering-Solutions-using-Azure-Databricks/Instructions/Labs/05-govern-unity-catalog-objects.html)  
 **Notebook oficial:** [Importar o consultar notebook `.ipynb`](https://raw.githubusercontent.com/MicrosoftLearning/DP-750T00-Implement-Data-Engineering-Solutions-using-Azure-Databricks/refs/heads/main/Allfiles/05-govern-unity-catalog-objects.ipynb)  
@@ -129,13 +195,13 @@ Los registros de auditoría sirven para investigar operaciones y cambios relevan
 
 **Advertencia:** los registros y las tablas de sistema pueden necesitar activación o privilegios específicos y presentar latencia. No interpretes una ausencia de filas como prueba de que ningún usuario accedió al dato.
 
+### Evidencias de retención, linaje y auditoría
 
----
+Ejecuta una transformación pequeña del notebook para que haya un vínculo de linaje observable. Abre la tabla de destino en Catalog Explorer y comprueba la relación con su origen. Después revisa las tablas de sistema del laboratorio con el intervalo y la identidad de prueba. Si no aparece actividad, verifica acceso a las system tables, región, latencia y que la acción elegida pertenezca a los eventos capturados. Para retención, guarda una evidencia de propiedades, un historial reciente y los candidatos de VACUUM. El borrado físico corresponde únicamente al dataset de prácticas y al procedimiento oficial. Los filtros de prueba deben reducir el rango de auditoría para evitar inspeccionar acciones de usuarios ajenos.
 
-### 📚 Fuentes y navegación
+## Fuentes y navegación
 
-- [Contenido oficial de Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/govern-unity-catalog-objects/)
-- [Repositorio docente de laboratorios DP-750T00](https://microsoftlearning.github.io/DP-750T00-Implement-Data-Engineering-Solutions-using-Azure-Databricks/)
-- [Guía oficial de competencias del examen DP-750](https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/dp-750)
+- [Fuentes de la certificación](../FUENTES.md)
+- [Preparación y limpieza del entorno](../PREPARACION-LABORATORIOS.md)
 
-[🏠 Índice](../README.md) · [← Anterior](../06-proteger-objetos-de-unity-catalog/README.md) · [Siguiente →](../08-modelado-de-datos/README.md)
+[Índice DP-750](../README.md) · [← Proteger objetos de Unity Catalog](../06-proteger-objetos-de-unity-catalog/README.md) · [Diseñar e implementar el modelado de datos →](../08-modelado-de-datos/README.md)

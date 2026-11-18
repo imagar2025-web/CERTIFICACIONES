@@ -1,19 +1,39 @@
-[🏠 Índice](../README.md) · [← Anterior](../09-ingesta-de-datos/README.md) · [Siguiente →](../11-calidad-de-datos/README.md)
+# 10 · Limpiar, transformar y cargar datos
 
-> **Estado de estudio:** ✅ Visto · **Unidades oficiales:** 11 · [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/cleanse-transform-load-data-into-unity-catalog/)  
-> **Versión de apuntes:** 15-11-2026 · Contenido técnico redactado de forma original a partir del itinerario de Microsoft.
+[Índice DP-750](../README.md) · [← Ingerir datos en Unity Catalog](../09-ingesta-de-datos/README.md) · [Gestionar restricciones de calidad →](../11-calidad-de-datos/README.md)
 
-# 10. Limpiar, transformar y cargar datos
+**Progreso personal:** Estudiado. [Módulo oficial](https://learn.microsoft.com/en-us/training/modules/cleanse-transform-load-data-into-unity-catalog/).
 
-**Referencia Microsoft Learn:** [Limpiar, transformar y cargar datos](https://learn.microsoft.com/en-us/training/modules/cleanse-transform-load-data-into-unity-catalog/) · **11 unidades oficiales**.
+## Unidades
 
-## 10.1. De datos crudos a datos confiables
+1. [Introduction](#unidad-01)
+2. [Profile data](#unidad-02)
+3. [Choose column data types](#unidad-03)
+4. [Resolve duplicates and nulls](#unidad-04)
+5. [Transform data with filters and aggregations](#unidad-05)
+6. [Transform data with joins and set operators](#unidad-06)
+7. [Transform data with denormalization and pivots](#unidad-07)
+8. [Load data with merge, insert, and append](#unidad-08)
+9. [Exercise - Cleanse, Transform, and Load Data into Unity Catalog](#unidad-09)
+10. [Module assessment](#unidad-10)
+11. [Summary](#unidad-11)
+
+- [Desarrollo aplicado](#desarrollo-aplicado)
+- [Laboratorio y comprobaciones](#laboratorio-y-comprobaciones)
+
+## Unidad 01
+
+### Introduction
 
 La calidad no es una operación única. Primero se exploran anomalías, se definen reglas, se aplican transformaciones y se miden sus resultados. Una plataforma fiable conserva suficiente trazabilidad para explicar por qué una fila fue rechazada o modificada.
 
 **Dimensiones frecuentes:** completitud, validez, unicidad, consistencia, actualidad y exactitud. No todas son verificables automáticamente; por ejemplo, un email puede cumplir una expresión regular y seguir siendo falso.
 
-## 10.2. Perfilado de datos
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/cleanse-transform-load-data-into-unity-catalog/1-introduction)
+
+## Unidad 02
+
+### Profile data
 
 El **data profiling** calcula frecuencias, rangos, proporción de nulos, valores distintos, distribuciones y posibles anomalías antes de decidir las transformaciones. Es un diagnóstico, no una corrección.
 
@@ -29,7 +49,11 @@ FROM estudio.ventas.pedidos_raw;
 
 Interpretación: si el número de pedidos distintos es menor que el total, puede haber duplicados; pero también podrían existir varias líneas por pedido. Antes de borrar registros hay que comprobar el grano esperado.
 
-## 10.3. Elegir tipos de datos
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/cleanse-transform-load-data-into-unity-catalog/2-profile-data-summary-statistics)
+
+## Unidad 03
+
+### Choose column data types
 
 Un tipo correcto mejora almacenamiento, integridad y comportamiento de los cálculos. **STRING** para texto e identificadores que no se calculan; **BIGINT/INT** para enteros; **DECIMAL(p,s)** para cantidades exactas como dinero; **DOUBLE** para magnitudes aproximadas; **DATE** y **TIMESTAMP** para fechas/instantes; **BOOLEAN** para estados lógicos.
 
@@ -45,7 +69,11 @@ FROM estudio.ventas.pedidos_raw;
 
 `TRY_CAST` puede devolver `NULL` en conversiones que no sean válidas en vez de abortar como una conversión estricta, según las reglas del tipo y el motor.
 
-## 10.4. Resolver nulos y duplicados
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/cleanse-transform-load-data-into-unity-catalog/3-choose-appropriate-column-data-types)
+
+## Unidad 04
+
+### Resolve duplicates and nulls
 
 **NULL** significa valor desconocido o ausente; no es lo mismo que cero ni que cadena vacía. SQL utiliza lógica de tres valores: una comparación con `NULL` normalmente no devuelve `TRUE` ni `FALSE`, sino `UNKNOWN`. Para detectarlo se utiliza `IS NULL` / `IS NOT NULL`, no `= NULL`.
 
@@ -72,7 +100,26 @@ SELECT * EXCEPT (rn) FROM ordenados WHERE rn = 1;
 
 Esquema didáctico: se supone que existe `fecha_actualizacion`; cuando hay empates, añadir un desempate determinista.
 
-## 10.5. Filtros, grupos y agregaciones
+#### Deduplicación reproducible
+
+Distingue una fila duplicada de dos versiones de la misma clave. Elimina duplicados exactos cuando coincidan en todos los campos que definen la entrega. Si el negocio exige conservar el último evento por clave, selecciona explícitamente el criterio de orden. Un empate requiere una clave de desempate estable. Antes de usar los datos en un MERGE, valida que solo queda una fila por clave del lote si tu condición de match lo requiere.
+
+```sql
+SELECT pedido_id, importe, fecha_evento
+FROM estudio.bronze.pedidos_raw
+QUALIFY ROW_NUMBER() OVER (
+  PARTITION BY pedido_id
+  ORDER BY fecha_evento DESC NULLS LAST, evento_id DESC
+) = 1;
+```
+
+El ejemplo supone que `evento_id` rompe empates y que su orden representa una prioridad aceptada. Una regla de tiempo inválido puede trasladar filas a cuarentena antes de aplicar el ranking. Antes de rellenar nulos decide si representan un valor desconocido, un dato que todavía no llegó o un valor que no aplica.
+
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/cleanse-transform-load-data-into-unity-catalog/4-resolve-duplicate-missing-null-values)
+
+## Unidad 05
+
+### Transform data with filters and aggregations
 
 `WHERE` filtra filas **antes** del agrupamiento; `HAVING` filtra **grupos** después de agregar. `GROUP BY` determina los grupos y funciones como `SUM`, `COUNT`, `AVG`, `MIN`, `MAX` calculan estadísticas.
 
@@ -86,7 +133,11 @@ HAVING COUNT(*) >= 3;
 
 Esta consulta cuenta pedidos con importe positivo, calcula su gasto y muestra clientes con al menos tres. Los filtros aplicados antes de agregar cambian la población analizada y, por tanto, el significado de las métricas.
 
-## 10.6. Joins y operadores de conjuntos
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/cleanse-transform-load-data-into-unity-catalog/5-transform-data-filter-group-aggregate)
+
+## Unidad 06
+
+### Transform data with joins and set operators
 
 | Operación | Resultado |
 |---|---|
@@ -108,7 +159,11 @@ LEFT JOIN estudio.ventas.clientes c
 
 Un `JOIN` puede multiplicar filas cuando las claves no son únicas. Antes de agregar después del join hay que confirmar cardinalidades y grano. Los operadores de conjuntos requieren columnas compatibles y el mismo número de posiciones.
 
-## 10.7. Denormalizar, pivotar y despivotar
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/cleanse-transform-load-data-into-unity-catalog/6-transform-data-join-union-intersect-except)
+
+## Unidad 07
+
+### Transform data with denormalization and pivots
 
 **Denormalización** combina atributos para facilitar consultas y reducir uniones, a cambio de posible redundancia y mantenimiento. **PIVOT** transforma valores de filas en columnas agregadas; **UNPIVOT** transforma columnas en filas, útil para normalizar archivos anchos.
 
@@ -121,7 +176,11 @@ PIVOT (SUM(importe) FOR canal IN ('web', 'tienda'));
 
 Un pivot requiere conocer las categorías que se materializan como columnas o generar la consulta dinámicamente. No debe confundirse con una operación que agregue «automáticamente» todos los posibles valores futuros.
 
-## 10.8. INSERT, APPEND, OVERWRITE y MERGE
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/cleanse-transform-load-data-into-unity-catalog/7-transform-data-flatten-pivot-unpivot)
+
+## Unidad 08
+
+### Load data with merge, insert, and append
 
 - **`INSERT INTO` / append:** incorpora nuevos registros sin reemplazar los anteriores; correcto cuando llegan nuevos datos y no existen colisiones de clave.
 - **Overwrite:** sustituye el conjunto de datos especificado; apropiado para cargas completas controladas, pero peligroso si se aplica a un destino equivocado.
@@ -140,18 +199,35 @@ VALUES (fuente.id_cliente, fuente.nombre, fuente.ciudad);
 
 Este `MERGE` ilustra un **SCD Tipo 1** sobre el estado actual. No preserva automáticamente versiones antiguas. Además, una fuente con varias filas por clave puede crear ambigüedades o fallos: resuelve antes la unicidad de la clave de emparejamiento.
 
-## 10.9. Laboratorio final y evaluación
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/cleanse-transform-load-data-into-unity-catalog/8-load-data-merge-insert-append)
+
+## Unidad 09
+
+### Exercise - Cleanse, Transform, and Load Data into Unity Catalog
 
 Diseña una tubería con estas etapas: CSV bruto → perfilado → tipado explícito → detección de registros inválidos → deduplicación por clave y fecha → join con clientes → agregación por canal → `MERGE` hacia la tabla de consumo. Conserva un dataset de rechazos que explique la causa de cada exclusión.
 
 **Comprobaciones que debes poder explicar:** ¿por qué `WHERE campo = NULL` no funciona? ¿cuándo usar `DECIMAL`? ¿cómo detectar un join que duplica importes? ¿qué diferencia hay entre `INSERT` y `MERGE`? ¿cómo afecta `HAVING` a un grupo?
 
----
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/cleanse-transform-load-data-into-unity-catalog/9-exercise-cleanse-transform-load-data-into-unity-catalog)
 
----
+## Unidad 10
 
+### Module assessment
 
-## Desarrollo en profundidad: transformar sin perder trazabilidad
+**Caso de evaluación.** Una tabla de pedidos aumenta de 100 a 170 filas tras un join que solo añade la región del cliente. Comprueba cardinalidad y duplicados de la clave en la dimensión. Si hay versiones históricas, añade el predicado de vigencia al join. Cuando el requisito sea conservar todos los pedidos, las filas sin cliente pueden quedar con valores nulos y quedar sujetas a una regla explícita. El recuento por clave antes y después ayuda a detectar multiplicaciones accidentales.
+
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/cleanse-transform-load-data-into-unity-catalog/10-knowledge-check)
+
+## Unidad 11
+
+### Summary
+
+Una transformación reproducible conserva datos de entrada, documenta reglas y valida la salida por recuentos y atributos de negocio. Cada operación de carga tiene un comportamiento al repetirse. Un append suele volver a añadir filas. Un merge puede ser idempotente si sus claves y condiciones hacen que el estado final sea estable. Prueba dos veces la misma entrada y compara tanto filas como claves y campos que cambian con el tiempo, como timestamps de ejecución.
+
+[Unidad oficial](https://learn.microsoft.com/en-us/training/modules/cleanse-transform-load-data-into-unity-catalog/11-summary)
+
+## Desarrollo aplicado
 
 ### Separar calidad técnica de reglas de negocio
 
@@ -206,9 +282,7 @@ Este ejemplo es de **estado actual/SCD tipo 1**. El origen debe tener una fila p
 
 Documenta aserciones: mismo número de eventos esperados, integridad referencial cuando aplique, importes no negativos, claves sin duplicación y evolución controlada de volumen. Incluye pruebas con datos deliberadamente erróneos y comprueba que el pipeline los aísla, corrige o rechaza según el contrato. No consideres una transformación correcta solo porque devuelve un DataFrame sin excepciones.
 
----
-
-## 🧪 Guía de laboratorio y comprobación práctica
+## Laboratorio y comprobaciones
 
 **Ejercicio oficial:** [Abrir las instrucciones de MicrosoftLearning](https://microsoftlearning.github.io/DP-750T00-Implement-Data-Engineering-Solutions-using-Azure-Databricks/Instructions/Labs/08-cleanse-transform-load-data-into-unity-catalog.html)  
 **Notebook oficial:** [Importar o consultar notebook `.ipynb`](https://raw.githubusercontent.com/MicrosoftLearning/DP-750T00-Implement-Data-Engineering-Solutions-using-Azure-Databricks/refs/heads/main/Allfiles/08-cleanse-transform-load-data-into-unity-catalog.ipynb)  
@@ -232,13 +306,13 @@ Documenta aserciones: mismo número de eventos esperados, integridad referencial
 
 **Entrega recomendada:** tabla Silver de viviendas depuradas, consulta Gold de precios medios por ciudad y una bitácora con recuentos de registros eliminados o transformados. Esta última propuesta de entrega es complementaria, no un requisito literal del laboratorio.
 
+### Reconciliación de la transformación
 
----
+Antes de hacer el join del laboratorio, comprueba duplicados por clave y cuántos registros carecen de campo obligatorio. Después del join registra filas totales y claves distintas. Si aumenta el total, identifica claves multiplicadas y comprueba que la relación esperada permite esa cardinalidad. Para el pivot fija categorías representativas y compara la suma de las columnas resultantes con la agrupación anterior al pivot para un subconjunto conocido. Si repites la carga, verifica cómo se comporta el destino con la misma fuente. Guarda el conteo de filas afectadas y un ejemplo de transformación manual para comprobarlo por consulta.
 
-### 📚 Fuentes y navegación
+## Fuentes y navegación
 
-- [Contenido oficial de Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/cleanse-transform-load-data-into-unity-catalog/)
-- [Repositorio docente de laboratorios DP-750T00](https://microsoftlearning.github.io/DP-750T00-Implement-Data-Engineering-Solutions-using-Azure-Databricks/)
-- [Guía oficial de competencias del examen DP-750](https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/dp-750)
+- [Fuentes de la certificación](../FUENTES.md)
+- [Preparación y limpieza del entorno](../PREPARACION-LABORATORIOS.md)
 
-[🏠 Índice](../README.md) · [← Anterior](../09-ingesta-de-datos/README.md) · [Siguiente →](../11-calidad-de-datos/README.md)
+[Índice DP-750](../README.md) · [← Ingerir datos en Unity Catalog](../09-ingesta-de-datos/README.md) · [Gestionar restricciones de calidad →](../11-calidad-de-datos/README.md)
