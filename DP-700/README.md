@@ -1,10 +1,10 @@
 # DP-700 · Microsoft Certified: Fabric Data Engineer Associate
 
-> **Estado del manual:** entrega parcial y trazable. **8 de 21 módulos** con README de estudio publicado; 13 pendientes de desarrollo profundo. **Fecha de revisión:** noviembre de 2026. No se han ejecutado los laboratorios en un tenant de Fabric.
+> **Estado del manual:** estructura publicada, revisión técnica y editorial pendiente. **21 de 21 README publicados** con README de estudio publicado; ningún README pendiente; revisión pendiente de desarrollo profundo. **Fecha de revisión:** noviembre de 2026. No se han ejecutado los laboratorios en un tenant de Fabric.
 
 ## Qué incluye esta documentación
 
-Manual técnico en español de España, con nombres de servicios y comandos en inglés. Los módulos preparados incluyen arquitectura, ejemplos reproducibles, consideraciones de costes, seguridad, verificaciones y laboratorios explicados. **Los materiales aún no desarrollados aparecen identificados como pendientes; no se incluyen resúmenes vacíos ni se declara terminada la certificación.**
+Manual técnico en español de España, con nombres de servicios y comandos en inglés. Los módulos preparados incluyen arquitectura, ejemplos reproducibles, consideraciones de costes, seguridad, verificaciones y laboratorios explicados. **Los 21 README ya existen, pero la profundidad de varios módulos requiere ampliación editorial respecto a la muestra aprobada; no se declara terminada la documentación ni ejecutados los laboratorios.**
 
 La formación utiliza cinco rutas oficiales con **26 apariciones de módulos, 21 distintos**. Un módulo compartido solo tiene un archivo para evitar divergencias. Los identificadores 01–21 son numeración de esta biblioteca y no números oficiales de Microsoft.
 
@@ -29,35 +29,35 @@ La formación utiliza cinco rutas oficiales con **26 apariciones de módulos, 21
 
 ### 3. [Implement Real-Time Intelligence with Microsoft Fabric](https://learn.microsoft.com/en-us/training/paths/explore-real-time-analytics-microsoft-fabric/)
 
-1. [Get started with Real-Time Intelligence in Microsoft Fabric](https://learn.microsoft.com/en-us/training/modules/get-started-kusto-fabric/) **(pendiente de desarrollo)**
-2. [Use Eventstream in Microsoft Fabric](https://learn.microsoft.com/en-us/training/modules/explore-event-streams-microsoft-fabric/) **(pendiente de desarrollo)**
+1. [Get started with Real-Time Intelligence in Microsoft Fabric](09-introduccion-real-time-intelligence/README.md)
+2. [Use Eventstream in Microsoft Fabric](10-eventstreams/README.md)
 3. [Work with real-time data in an Eventhouse in Microsoft Fabric](04-eventhouse-kql/README.md)
-4. [Create Real-Time Dashboards with Microsoft Fabric](https://learn.microsoft.com/en-us/training/modules/create-real-time-dashboards-microsoft-fabric/) **(pendiente de desarrollo)**
-5. [Use Activator in Microsoft Fabric](https://learn.microsoft.com/en-us/training/modules/use-fabric-activator/) **(pendiente de desarrollo)**
+4. [Create Real-Time Dashboards with Microsoft Fabric](11-real-time-dashboards/README.md)
+5. [Use Activator in Microsoft Fabric](12-activator/README.md)
 
 ### 4. [Implement a data warehouse with Microsoft Fabric](https://learn.microsoft.com/en-us/training/paths/work-with-data-warehouses-using-microsoft-fabric/)
 
-1. [Introduction to end-to-end analytics using Microsoft Fabric](https://learn.microsoft.com/en-us/training/modules/introduction-end-analytics-use-microsoft-fabric/) **(pendiente de desarrollo)**
-2. [Get started with data warehouses in Microsoft Fabric](https://learn.microsoft.com/en-us/training/modules/get-started-data-warehouse/) **(pendiente de desarrollo)**
-3. [Load data into a Microsoft Fabric data warehouse](https://learn.microsoft.com/en-us/training/modules/load-data-into-microsoft-fabric-data-warehouse/) **(pendiente de desarrollo)**
-4. [Query a data warehouse in Microsoft Fabric](https://learn.microsoft.com/en-us/training/modules/query-data-warehouse-microsoft-fabric/) **(pendiente de desarrollo)**
-5. [Get started with Copilot in Microsoft Fabric for Data Warehouse](https://learn.microsoft.com/en-us/training/modules/get-started-copilot-fabric-data-warehouse/) **(pendiente de desarrollo)**
-6. [Monitor a Microsoft Fabric data warehouse](https://learn.microsoft.com/en-us/training/modules/monitor-fabric-data-warehouse/) **(pendiente de desarrollo)**
-7. [Secure a Microsoft Fabric data warehouse](https://learn.microsoft.com/en-us/training/modules/secure-data-warehouse-in-microsoft-fabric/) **(pendiente de desarrollo)**
+1. [Introduction to end-to-end analytics using Microsoft Fabric](05-introduccion-microsoft-fabric/README.md)
+2. [Get started with data warehouses in Microsoft Fabric](13-introduccion-data-warehouse/README.md)
+3. [Load data into a Microsoft Fabric data warehouse](14-carga-data-warehouse/README.md)
+4. [Query a data warehouse in Microsoft Fabric](15-consultas-data-warehouse/README.md)
+5. [Get started with Copilot in Microsoft Fabric for Data Warehouse](16-copilot-data-warehouse/README.md)
+6. [Monitor a Microsoft Fabric data warehouse](17-monitorizacion-data-warehouse/README.md)
+7. [Secure a Microsoft Fabric data warehouse](18-seguridad-data-warehouse/README.md)
 
 ### 5. [Manage a Microsoft Fabric environment](https://learn.microsoft.com/en-us/training/paths/manage-microsoft-fabric-environment/)
 
-1. [Implement CI/CD in Microsoft Fabric](https://learn.microsoft.com/en-us/training/modules/implement-cicd-in-fabric/) **(pendiente de desarrollo)**
-2. [Monitor activities in Microsoft Fabric](https://learn.microsoft.com/en-us/training/modules/monitor-fabric-items/) **(pendiente de desarrollo)**
-3. [Secure data access in Microsoft Fabric](https://learn.microsoft.com/en-us/training/modules/secure-data-access-in-fabric/) **(pendiente de desarrollo)**
+1. [Implement CI/CD in Microsoft Fabric](19-cicd/README.md)
+2. [Monitor activities in Microsoft Fabric](20-monitorizacion-fabric/README.md)
+3. [Secure data access in Microsoft Fabric](21-seguridad-fabric/README.md)
 
 ## Control de progreso
 
 | Estado | Recuento | Observación |
 | --- | ---: | --- |
-| README de estudio publicados | 8 | Dataflows Gen2, Data Factory Pipelines, Apache Spark, Eventhouse KQL, fundamentos Fabric, Lakehouse, Delta Lake y Medallion |
-| Módulos pendientes de redacción exhaustiva | 13 | Se conservan enlaces al contenido oficial hasta desarrollarlos |
-| Laboratorios documentados en los módulos preparados | 7 | Seis asociados a DP-700, uno complementario de DP-603 y un ejercicio propio introductorio |
+| README de módulo publicados | 21 | Los 21 módulos de las cinco rutas oficiales |
+| Módulos pendientes de creación de archivo | 0 | Se conservan enlaces al contenido oficial hasta desarrollarlos |
+| Laboratorios y ejercicios documentados | 21 | Asociación detallada en PROGRESO.md; algunos complementarios o propios |
 | Laboratorios ejecutados por este agente | 0 | No hay resultados medidos ni capturas de ejecución |
 
 Para seguimiento por unidad y laboratorio, consultar [PROGRESO.md](PROGRESO.md).
@@ -74,7 +74,7 @@ Para seguimiento por unidad y laboratorio, consultar [PROGRESO.md](PROGRESO.md).
 2. Priorizar explicación extensa y documentación original Microsoft Learn y MicrosoftLearning.
 3. Distinguir código de elaboración propia del contenido y los pasos oficiales.
 4. No inventar resultados de ejercicios ni asumir compatibilidad de opciones de distintas capacidades de Fabric.
-5. Publicar módulos adicionales solo cuando su desarrollo técnico y laboratorio hayan sido revisados.
+5. Revisar y ampliar cada módulo publicado: disponer de README no equivale a validación exhaustiva.
 6. Actualizar el índice y el registro de progreso al incorporar un módulo.
 
 ## Referencias de examen
