@@ -1,6 +1,6 @@
 # DP-700 · Microsoft Certified: Fabric Data Engineer Associate
 
-> **Estado del manual:** entrega parcial y trazable. **4 de 21 módulos** con README de estudio publicado; 17 pendientes de desarrollo profundo. **Fecha de revisión:** noviembre de 2026. No se han ejecutado los laboratorios en un tenant de Fabric.
+> **Estado del manual:** entrega parcial y trazable. **8 de 21 módulos** con README de estudio publicado; 13 pendientes de desarrollo profundo. **Fecha de revisión:** noviembre de 2026. No se han ejecutado los laboratorios en un tenant de Fabric.
 
 ## Qué incluye esta documentación
 
@@ -19,13 +19,13 @@ La formación utiliza cinco rutas oficiales con **26 apariciones de módulos, 21
 
 ### 2. [Implement a Lakehouse with Microsoft Fabric](https://learn.microsoft.com/en-us/training/paths/implement-lakehouse-microsoft-fabric/)
 
-1. [Introduction to end-to-end analytics using Microsoft Fabric](https://learn.microsoft.com/en-us/training/modules/introduction-end-analytics-use-microsoft-fabric/) **(pendiente de desarrollo)**
-2. [Get started with lakehouses in Microsoft Fabric](https://learn.microsoft.com/en-us/training/modules/get-started-lakehouses/) **(pendiente de desarrollo)**
+1. [Introduction to end-to-end analytics using Microsoft Fabric](05-introduccion-microsoft-fabric/README.md)
+2. [Get started with lakehouses in Microsoft Fabric](06-lakehouse/README.md)
 3. [Use Apache Spark in Microsoft Fabric](03-apache-spark/README.md)
-4. [Work with Delta Lake tables in Microsoft Fabric](https://learn.microsoft.com/en-us/training/modules/work-delta-lake-tables-fabric/) **(pendiente de desarrollo)**
+4. [Work with Delta Lake tables in Microsoft Fabric](07-delta-lake/README.md)
 5. [Ingest Data with Dataflows Gen2 in Microsoft Fabric](01-dataflows-gen2/README.md)
 6. [Orchestrate processes and data movement with Microsoft Fabric](02-orquestacion-data-factory/README.md)
-7. [Organize a Fabric lakehouse using medallion architecture design](https://learn.microsoft.com/en-us/training/modules/describe-medallion-architecture/) **(pendiente de desarrollo)**
+7. [Organize a Fabric lakehouse using medallion architecture design](08-arquitectura-medallion/README.md)
 
 ### 3. [Implement Real-Time Intelligence with Microsoft Fabric](https://learn.microsoft.com/en-us/training/paths/explore-real-time-analytics-microsoft-fabric/)
 
@@ -55,9 +55,9 @@ La formación utiliza cinco rutas oficiales con **26 apariciones de módulos, 21
 
 | Estado | Recuento | Observación |
 | --- | ---: | --- |
-| README de estudio publicados | 4 | Dataflows Gen2, Data Factory Pipelines, Apache Spark y Eventhouse KQL |
-| Módulos pendientes de redacción exhaustiva | 17 | Se conservan enlaces al contenido oficial hasta desarrollarlos |
-| Laboratorios documentados en los módulos preparados | 4 | Tres asociados a DP-700 y uno complementario de DP-603 |
+| README de estudio publicados | 8 | Dataflows Gen2, Data Factory Pipelines, Apache Spark, Eventhouse KQL, fundamentos Fabric, Lakehouse, Delta Lake y Medallion |
+| Módulos pendientes de redacción exhaustiva | 13 | Se conservan enlaces al contenido oficial hasta desarrollarlos |
+| Laboratorios documentados en los módulos preparados | 7 | Seis asociados a DP-700, uno complementario de DP-603 y un ejercicio propio introductorio |
 | Laboratorios ejecutados por este agente | 0 | No hay resultados medidos ni capturas de ejecución |
 
 Para seguimiento por unidad y laboratorio, consultar [PROGRESO.md](PROGRESO.md).
