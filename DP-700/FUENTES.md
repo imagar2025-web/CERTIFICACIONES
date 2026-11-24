@@ -26,19 +26,19 @@
 - **M06 · Get started with lakehouses in Microsoft Fabric**: [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/get-started-lakehouses/). [README desarrollado](06-lakehouse/README.md).
 - **M07 · Work with Delta Lake tables in Microsoft Fabric**: [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/work-delta-lake-tables-fabric/). [README desarrollado](07-delta-lake/README.md).
 - **M08 · Organize a Fabric lakehouse using medallion architecture design**: [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/describe-medallion-architecture/). [README desarrollado](08-arquitectura-medallion/README.md).
-- **M09 · Get started with Real-Time Intelligence in Microsoft Fabric**: [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/get-started-kusto-fabric/). README técnico pendiente.
-- **M10 · Use Eventstream in Microsoft Fabric**: [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/explore-event-streams-microsoft-fabric/). README técnico pendiente.
-- **M11 · Create Real-Time Dashboards with Microsoft Fabric**: [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/create-real-time-dashboards-microsoft-fabric/). README técnico pendiente.
-- **M12 · Use Activator in Microsoft Fabric**: [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/use-fabric-activator/). README técnico pendiente.
-- **M13 · Get started with data warehouses in Microsoft Fabric**: [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/get-started-data-warehouse/). README técnico pendiente.
-- **M14 · Load data into a Microsoft Fabric data warehouse**: [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/load-data-into-microsoft-fabric-data-warehouse/). README técnico pendiente.
-- **M15 · Query a data warehouse in Microsoft Fabric**: [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/query-data-warehouse-microsoft-fabric/). README técnico pendiente.
-- **M16 · Get started with Copilot in Microsoft Fabric for Data Warehouse**: [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/get-started-copilot-fabric-data-warehouse/). README técnico pendiente.
-- **M17 · Monitor a Microsoft Fabric data warehouse**: [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/monitor-fabric-data-warehouse/). README técnico pendiente.
-- **M18 · Secure a Microsoft Fabric data warehouse**: [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/secure-data-warehouse-in-microsoft-fabric/). README técnico pendiente.
-- **M19 · Implement CI/CD in Microsoft Fabric**: [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/implement-cicd-in-fabric/). README técnico pendiente.
-- **M20 · Monitor activities in Microsoft Fabric**: [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/monitor-fabric-items/). README técnico pendiente.
-- **M21 · Secure data access in Microsoft Fabric**: [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/secure-data-access-in-fabric/). README técnico pendiente.
+- **M09 · Get started with Real-Time Intelligence in Microsoft Fabric**: [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/get-started-kusto-fabric/). [README desarrollado](09-introduccion-real-time-intelligence/README.md).
+- **M10 · Use Eventstream in Microsoft Fabric**: [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/explore-event-streams-microsoft-fabric/). [README desarrollado](10-eventstreams/README.md).
+- **M11 · Create Real-Time Dashboards with Microsoft Fabric**: [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/create-real-time-dashboards-microsoft-fabric/). [README desarrollado](11-real-time-dashboards/README.md).
+- **M12 · Use Activator in Microsoft Fabric**: [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/use-fabric-activator/). [README desarrollado](12-activator/README.md).
+- **M13 · Get started with data warehouses in Microsoft Fabric**: [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/get-started-data-warehouse/). [README desarrollado](13-introduccion-data-warehouse/README.md).
+- **M14 · Load data into a Microsoft Fabric data warehouse**: [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/load-data-into-microsoft-fabric-data-warehouse/). [README desarrollado](14-carga-data-warehouse/README.md).
+- **M15 · Query a data warehouse in Microsoft Fabric**: [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/query-data-warehouse-microsoft-fabric/). [README desarrollado](15-consultas-data-warehouse/README.md).
+- **M16 · Get started with Copilot in Microsoft Fabric for Data Warehouse**: [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/get-started-copilot-fabric-data-warehouse/). [README desarrollado](16-copilot-data-warehouse/README.md).
+- **M17 · Monitor a Microsoft Fabric data warehouse**: [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/monitor-fabric-data-warehouse/). [README desarrollado](17-monitorizacion-data-warehouse/README.md).
+- **M18 · Secure a Microsoft Fabric data warehouse**: [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/secure-data-warehouse-in-microsoft-fabric/). [README desarrollado](18-seguridad-data-warehouse/README.md).
+- **M19 · Implement CI/CD in Microsoft Fabric**: [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/implement-cicd-in-fabric/). [README desarrollado](19-cicd/README.md).
+- **M20 · Monitor activities in Microsoft Fabric**: [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/monitor-fabric-items/). [README desarrollado](20-monitorizacion-fabric/README.md).
+- **M21 · Secure data access in Microsoft Fabric**: [Microsoft Learn](https://learn.microsoft.com/en-us/training/modules/secure-data-access-in-fabric/). [README desarrollado](21-seguridad-fabric/README.md).
 
 ## Repositorios y material de laboratorio
 
@@ -63,3 +63,7 @@
 - [OneLake](https://learn.microsoft.com/en-us/fabric/onelake/onelake-overview)
 
 > Los ejercicios documentados no se han ejecutado. Los ejemplos complementarios se identifican como propios.
+
+## Fuentes en el directorio alternativo
+
+Los módulos 14, 15, 18, 19 y 21 tienen originales en [`learn-pr/wwl-data-ai`](https://github.com/MicrosoftDocs/learn/tree/main/learn-pr/wwl-data-ai), en lugar del habitual `learn-pr/wwl`. Cada README enlaza a sus unidades específicas. Los ejercicios de Dashboard, Activator y Eventhouse utilizados son complementarios, porque aparecen catalogados en DP-603.
