@@ -10,10 +10,10 @@
 | 02 | [Orchestrate processes and data movement with Microsoft Fabric](02-orquestacion-data-factory/README.md) | Publicado | 04-ingest-pipeline | Teoría y procedimiento documentados; ejercicio NO ejecutado |
 | 03 | [Use Apache Spark in Microsoft Fabric](03-apache-spark/README.md) | Publicado | 02-analyze-spark | Teoría y procedimiento documentados; ejercicio NO ejecutado |
 | 04 | [Work with real-time data in an Eventhouse in Microsoft Fabric](04-eventhouse-kql/README.md) | Publicado | 12-query-data-in-kql-database (complementario) | Teoría y procedimiento documentados; ejercicio NO ejecutado |
-| 05 | Introduction to end-to-end analytics using Microsoft Fabric | Pendiente | Pendiente de asociación y revisión | Pendiente |
-| 06 | Get started with lakehouses in Microsoft Fabric | Pendiente | Pendiente de asociación y revisión | Pendiente |
-| 07 | Work with Delta Lake tables in Microsoft Fabric | Pendiente | Pendiente de asociación y revisión | Pendiente |
-| 08 | Organize a Fabric lakehouse using medallion architecture design | Pendiente | Pendiente de asociación y revisión | Pendiente |
+| 05 | [Introduction to end-to-end analytics using Microsoft Fabric](05-introduccion-microsoft-fabric/README.md) | Publicado | Ejercicio propio (sin lab oficial en índice) | Teoría y procedimiento documentados; ejercicio NO ejecutado |
+| 06 | [Get started with lakehouses in Microsoft Fabric](06-lakehouse/README.md) | Publicado | 01-lakehouse | Teoría y procedimiento documentados; ejercicio NO ejecutado |
+| 07 | [Work with Delta Lake tables in Microsoft Fabric](07-delta-lake/README.md) | Publicado | 03-delta-lake | Teoría y procedimiento documentados; ejercicio NO ejecutado |
+| 08 | [Organize a Fabric lakehouse using medallion architecture design](08-arquitectura-medallion/README.md) | Publicado | 03b-medallion-lakehouse | Teoría y procedimiento documentados; ejercicio NO ejecutado |
 | 09 | Get started with Real-Time Intelligence in Microsoft Fabric | Pendiente | Pendiente de asociación y revisión | Pendiente |
 | 10 | Use Eventstream in Microsoft Fabric | Pendiente | Pendiente de asociación y revisión | Pendiente |
 | 11 | Create Real-Time Dashboards with Microsoft Fabric | Pendiente | Pendiente de asociación y revisión | Pendiente |
@@ -32,14 +32,14 @@
 
 - Rutas oficiales: cinco, contrastadas con Microsoft Learn.
 - Módulos diferentes: 21, deduplicados por identidad de módulo.
-- Archivo original `index.yml` y unidades principales revisados para módulos 01–04.
-- Laboratorios del repositorio MicrosoftLearning leídos y asociados a módulos 01–04, marcando el cuarto como ejercicio **complementario DP-603**.
+- Archivo original `index.yml` y unidades principales revisados para módulos 01–08.
+- Laboratorios del repositorio MicrosoftLearning leídos y asociados a módulos 01–08, marcando el cuarto como ejercicio **complementario DP-603**.
 - Documentos creados en su propio directorio `DP-700/`, sin alterar la documentación DP-750.
 
 ## Limitaciones y trabajo pendiente
 
-- **Módulos 05–21:** desarrollar todas sus unidades, consultar includes/README y laboratorios oficiales y añadir pruebas, seguridad, costes, ejemplos y diagramas al nivel aprobado.
-- **Módulos 01–04:** antes de declararlos editorialmente definitivos, realizar revisión final contra toda actualización de Microsoft Learn, validar los ejemplos en un tenant y verificar cada actividad de laboratorio.
+- **Módulos 09–21:** desarrollar todas sus unidades, consultar includes/README y laboratorios oficiales y añadir pruebas, seguridad, costes, ejemplos y diagramas al nivel aprobado.
+- **Módulos 01–08:** antes de declararlos editorialmente definitivos, realizar revisión final contra toda actualización de Microsoft Learn, validar los ejemplos en un tenant y verificar cada actividad de laboratorio.
 - **Laboratorios:** no hay ejecuciones reales, capturas ni tiempos medidos; no presentar resultados simulados como observados.
 - **Imágenes locales:** pendientes de incorporar cuando haya figuras necesarias y permisos de reutilización; los README actuales emplean diagramas Mermaid.
 - **Examen:** mantener la matriz de objetivos de la study guide actualizada, especialmente cuando cambien las competencias evaluadas.
