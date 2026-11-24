@@ -1,10 +1,10 @@
 # DP-700 · Microsoft Certified: Fabric Data Engineer Associate
 
-> **Estado del manual:** estructura publicada, revisión técnica y editorial pendiente. **21 de 21 README publicados** con README de estudio publicado; ningún README pendiente; revisión pendiente de desarrollo profundo. **Fecha de revisión:** noviembre de 2026. No se han ejecutado los laboratorios en un tenant de Fabric.
+> **Estado:** 21 README creados y enlazados. Revisión editorial exhaustiva pendiente; laboratorios documentados pero no ejecutados. **Revisión:** 24/11/2026.
 
 ## Qué incluye esta documentación
 
-Manual técnico en español de España, con nombres de servicios y comandos en inglés. Los módulos preparados incluyen arquitectura, ejemplos reproducibles, consideraciones de costes, seguridad, verificaciones y laboratorios explicados. **Los 21 README ya existen, pero la profundidad de varios módulos requiere ampliación editorial respecto a la muestra aprobada; no se declara terminada la documentación ni ejecutados los laboratorios.**
+Manual técnico en español de España, con nombres de servicios y comandos en inglés. Los README incluyen arquitectura, ejemplos, seguridad, verificaciones y explicación de las prácticas a diferentes niveles de detalle. **Los 21 README ya existen, pero la profundidad de varios módulos requiere ampliación editorial respecto a la muestra aprobada; no se declara terminada la documentación ni ejecutados los laboratorios.**
 
 La formación utiliza cinco rutas oficiales con **26 apariciones de módulos, 21 distintos**. Un módulo compartido solo tiene un archivo para evitar divergencias. Los identificadores 01–21 son numeración de esta biblioteca y no números oficiales de Microsoft.
 
@@ -56,7 +56,7 @@ La formación utiliza cinco rutas oficiales con **26 apariciones de módulos, 21
 | Estado | Recuento | Observación |
 | --- | ---: | --- |
 | README de módulo publicados | 21 | Los 21 módulos de las cinco rutas oficiales |
-| Módulos pendientes de creación de archivo | 0 | Se conservan enlaces al contenido oficial hasta desarrollarlos |
+| Módulos pendientes de creación de archivo | 0 | Los 21 módulos tienen README; falta revisión de profundidad |
 | Laboratorios y ejercicios documentados | 21 | Asociación detallada en PROGRESO.md; algunos complementarios o propios |
 | Laboratorios ejecutados por este agente | 0 | No hay resultados medidos ni capturas de ejecución |
 
